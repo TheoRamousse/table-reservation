@@ -46,6 +46,8 @@ const MOCK_SNAPSHOT: FloorSnapshot = {
   ],
 };
 
+const MOCK_CLOSED_DAYS: Array<{ id: string; date: string; reason: string }> = [];
+
 const MOCK_CUSTOMERS: Customer[] = [
   { id: 'c1', firstName: 'Jean', lastName: 'Dupont', phone: '0601020304', email: 'jean.dupont@example.com', isBlacklisted: false, noShowCount: 0, vipLevel: VipLevel.None },
   { id: 'c2', firstName: 'Sophie', lastName: 'Martin', phone: '0605060708', email: 'sophie.martin@example.com', isBlacklisted: false, noShowCount: 1, vipLevel: VipLevel.Regular },
@@ -100,6 +102,23 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       .map(({ id, number, capacity, minCapacity, zone: z, isCombinable }) => ({ id, number, capacity, minCapacity, zone: z, isCombinable }))
       .sort((a, b) => a.capacity - b.capacity);
     return of(new HttpResponse({ status: 200, body: { tables, reason: null } }));
+  }
+
+  // GET /api/closed-days
+  if (req.method === 'GET' && req.url.endsWith('/api/closed-days')) {
+    return of(new HttpResponse({ status: 200, body: MOCK_CLOSED_DAYS }));
+  }
+
+  // POST /api/closed-days
+  if (req.method === 'POST' && req.url.endsWith('/api/closed-days')) {
+    const body = req.body as { date: string; reason: string };
+    const closedDay = {
+      id: `cd-${Math.random().toString(36).slice(2, 8)}`,
+      date: body.date,
+      reason: body.reason,
+    };
+    MOCK_CLOSED_DAYS.push(closedDay);
+    return of(new HttpResponse({ status: 201, body: { closedDay, cancelledBookingsCount: 2 } }));
   }
 
   // PATCH /api/customers/:id/blacklist

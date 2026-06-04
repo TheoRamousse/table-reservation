@@ -129,6 +129,38 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(new HttpResponse({ status: 201, body: created }));
   }
 
+  // DELETE /api/bookings/:id
+  if (req.method === 'DELETE' && req.url.match(/\/api\/bookings\/[^/]+$/) && !req.url.includes('/table-lock')) {
+    const id = req.url.split('/').pop()!;
+    const body = req.body as { cancellationReason?: string } | null;
+    return of(new HttpResponse({
+      status: 200,
+      body: {
+        id,
+        status: 'Cancelled',
+        cancellationReason: body?.cancellationReason ?? null,
+      },
+    }));
+  }
+
+  // PUT /api/bookings/:id
+  if (req.method === 'PUT' && req.url.match(/\/api\/bookings\/[^/]+$/)) {
+    const id = req.url.split('/').pop()!;
+    const body = req.body as { status?: string } | null;
+    return of(new HttpResponse({
+      status: 200,
+      body: {
+        id,
+        status: body?.status ?? 'Pending',
+      },
+    }));
+  }
+
+  // DELETE /api/bookings/:id/table-lock
+  if (req.method === 'DELETE' && req.url.match(/\/api\/bookings\/[^/]+\/table-lock/)) {
+    return of(new HttpResponse({ status: 204, body: null }));
+  }
+
   // POST /api/bookings
   if (req.method === 'POST' && req.url.endsWith('/api/bookings')) {
     const body = req.body as any;

@@ -1,0 +1,61 @@
+@if (isAuthenticated()) {
+  <nav class="bg-white border-b shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
+
+      <!-- Logo / Titre -->
+      <a routerLink="/floor"
+         class="flex items-center gap-1.5 text-sm font-bold text-gray-800 mr-3 shrink-0 no-underline">
+        <mat-icon class="text-indigo-600 !text-xl">restaurant</mat-icon>
+        <span class="hidden sm:inline">Table Résa</span>
+      </a>
+
+      <!-- Liens Staff -->
+      @for (item of staffItems(); track item.route) {
+        <a [routerLink]="item.route"
+           routerLinkActive="!text-indigo-600 !bg-indigo-50"
+           class="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm text-gray-600
+                  hover:bg-gray-100 transition-colors no-underline">
+          <mat-icon class="!text-base">{{ item.icon }}</mat-icon>
+          <span class="hidden md:inline">{{ item.label }}</span>
+        </a>
+      }
+
+      <!-- Séparateur + liens Manager/Admin -->
+      @if (hasAdminSection()) {
+        <span class="h-6 border-l border-gray-200 mx-1"></span>
+
+        @for (item of managerItems(); track item.route) {
+          <a [routerLink]="item.route"
+             routerLinkActive="!text-indigo-600 !bg-indigo-50"
+             class="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm text-gray-600
+                    hover:bg-gray-100 transition-colors no-underline">
+            <mat-icon class="!text-base">{{ item.icon }}</mat-icon>
+            <span class="hidden md:inline">{{ item.label }}</span>
+          </a>
+        }
+
+        @for (item of adminItems(); track item.route) {
+          <a [routerLink]="item.route"
+             routerLinkActive="!text-indigo-600 !bg-indigo-50"
+             class="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm text-gray-600
+                    hover:bg-gray-100 transition-colors no-underline">
+            <mat-icon class="!text-base">{{ item.icon }}</mat-icon>
+            <span class="hidden md:inline">{{ item.label }}</span>
+          </a>
+        }
+      }
+
+      <!-- Spacer -->
+      <span class="flex-1"></span>
+
+      <!-- Badge rôle -->
+      <span class="hidden sm:inline text-xs text-gray-400 font-mono mr-2">{{ role() }}</span>
+
+      <!-- Déconnexion -->
+      <button mat-icon-button (click)="logout()" matTooltip="Déconnexion" aria-label="Se déconnecter">
+        <mat-icon>logout</mat-icon>
+      </button>
+
+    </div>
+  </nav>
+}

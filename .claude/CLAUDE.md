@@ -2,11 +2,12 @@
 
 Système de réservation de tables restaurant — .NET 10 (backend) + Angular 20 (frontend).
 
-## Docs métier & technique
+## Docs de référence
 
-- Règles métier → @documentation/specs.md
-- Stack & architecture → @documentation/stack.md
-- Schéma de données → @documentation/data-model.md
+- PRD → @docs/prds/prd-table-reservation-2026-06-04/prd.md
+- Architecture → @docs/architecture.md
+- Epics & Stories → @docs/epics.md
+- Contrat API → @docs/api-contract.md
 
 ## Conventions de code
 

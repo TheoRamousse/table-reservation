@@ -15,7 +15,6 @@ export const routes: Routes = [
   },
   {
     path: 'availability',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/availability/availability-search.component').then(m => m.AvailabilitySearchComponent),
   },
@@ -43,6 +42,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/admin/table-management.component').then(m => m.TableManagementComponent),
   },
-  { path: '', redirectTo: 'floor', pathMatch: 'full' },
-  { path: '**', redirectTo: 'floor' },
+  { path: '', redirectTo: 'availability', pathMatch: 'full' },
+  { path: '**', redirectTo: 'availability' },
 ];

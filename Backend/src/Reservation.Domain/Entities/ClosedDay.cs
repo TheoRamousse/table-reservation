@@ -20,5 +20,8 @@ public sealed class ClosedDay
     }
 
     public static ClosedDay Create(DateOnly date, string reason, IClock clock)
-        => throw new NotImplementedException();
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        return new ClosedDay(Guid.NewGuid(), date, reason, clock.UtcNow);
+    }
 }

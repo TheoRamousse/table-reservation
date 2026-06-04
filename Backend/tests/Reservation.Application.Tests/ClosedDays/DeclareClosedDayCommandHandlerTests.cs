@@ -34,11 +34,13 @@ public class DeclareClosedDayCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.CancelledBookingsCount.Should().Be(2,
+            "les 2 réservations Pending et Confirmed doivent être annulées");
+        pending.Status.Should().Be(BookingStatus.Cancelled, "la réservation Pending doit être annulée");
+        confirmed.Status.Should().Be(BookingStatus.Cancelled, "la réservation Confirmed doit être annulée");
     }
 
     [Fact]
@@ -55,11 +57,11 @@ public class DeclareClosedDayCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.CancelledBookingsCount.Should().Be(0,
+            "aucune réservation Seated ou Completed ne doit être annulée");
     }
 
     [Fact]
@@ -79,11 +81,11 @@ public class DeclareClosedDayCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task<DeclareClosedDayResult>> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.CancelledBookingsCount.Should().Be(2,
+            "le résultat doit contenir le nombre de réservations annulées");
     }
 
     [Fact]
@@ -99,10 +101,11 @@ public class DeclareClosedDayCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task> act = () => handler.Handle(cmd, default);
+        await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        await _closedDayRepo.Received(1).AddAsync(
+            Arg.Any<Domain.Entities.ClosedDay>(), Arg.Any<CancellationToken>());
+        await _closedDayRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

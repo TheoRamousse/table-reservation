@@ -12,5 +12,13 @@ public sealed class LoginCommandHandler(
     IJwtTokenService jwtService) : IRequestHandler<LoginCommand, LoginResult?>
 {
     public async Task<LoginResult?> Handle(LoginCommand cmd, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var (success, role) = await userRepo.ValidateCredentialsAsync(cmd.Email, cmd.Password, ct);
+        if (!success) return null;
+
+        var token = jwtService.GenerateToken(cmd.Email, role);
+        var expiresAt = jwtService.GetExpiry();
+
+        return new LoginResult(token, expiresAt, role);
+    }
 }

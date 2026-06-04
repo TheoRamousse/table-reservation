@@ -19,10 +19,12 @@ public class ClosedDayTests
         const string reason = "Noël";
 
         // Act
-        var act = () => ClosedDay.Create(date, reason, _clock);
+        var closedDay = ClosedDay.Create(date, reason, _clock);
 
         // Assert
-        act.Should().Throw<NotImplementedException>("le stub n'est pas encore implémenté");
+        closedDay.Should().NotBeNull("un jour de fermeture valide doit être créé");
+        closedDay.ClosedDate.Should().Be(date);
+        closedDay.Reason.Should().Be(reason);
     }
 
     [Fact]
@@ -33,14 +35,10 @@ public class ClosedDayTests
         const string reason = "Noël";
 
         // Act
-        Action act = () =>
-        {
-            var closedDay = ClosedDay.Create(date, reason, _clock);
-            closedDay.CreatedAt.Should().Be(_clock.UtcNow);
-        };
+        var closedDay = ClosedDay.Create(date, reason, _clock);
 
         // Assert
-        act.Should().Throw<NotImplementedException>("le stub n'est pas encore implémenté");
+        closedDay.CreatedAt.Should().Be(_clock.UtcNow, "CreatedAt doit correspondre à l'heure de l'horloge");
     }
 
     [Fact]

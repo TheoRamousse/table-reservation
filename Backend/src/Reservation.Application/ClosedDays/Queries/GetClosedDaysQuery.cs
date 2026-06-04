@@ -10,5 +10,8 @@ public sealed class GetClosedDaysQueryHandler(IClosedDayRepository closedDayRepo
     : IRequestHandler<GetClosedDaysQuery, IReadOnlyList<ClosedDayDto>>
 {
     public async Task<IReadOnlyList<ClosedDayDto>> Handle(GetClosedDaysQuery query, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var days = await closedDayRepo.GetAllAsync(ct);
+        return days.Select(d => d.ToDto()).ToList();
+    }
 }

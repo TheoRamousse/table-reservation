@@ -28,11 +28,11 @@ public class CreateDiningServiceCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task<DiningServiceDto>> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.Should().BeOfType<DiningServiceDto>("le résultat doit être un DiningServiceDto");
+        result.Name.Should().Be("Déjeuner");
     }
 
     [Fact]
@@ -49,11 +49,12 @@ public class CreateDiningServiceCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task> act = () => handler.Handle(cmd, default);
+        await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        await _serviceRepo.Received(1).AddAsync(
+            Arg.Any<Domain.Entities.DiningService>(), Arg.Any<CancellationToken>());
+        await _serviceRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -70,10 +71,10 @@ public class CreateDiningServiceCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task<DiningServiceDto>> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.Should().BeOfType<DiningServiceDto>("le handler doit retourner un DiningServiceDto");
+        result.Id.Should().NotBeEmpty("l'ID du service doit être généré");
     }
 }

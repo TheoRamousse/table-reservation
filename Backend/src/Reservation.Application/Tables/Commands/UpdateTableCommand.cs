@@ -18,5 +18,11 @@ public sealed class UpdateTableCommandHandler(ITableRepository tableRepo)
     : IRequestHandler<UpdateTableCommand, TableDto>
 {
     public async Task<TableDto> Handle(UpdateTableCommand cmd, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var table = await tableRepo.GetByIdAsync(cmd.TableId, ct)
+            ?? throw new EntityNotFoundException("Table", cmd.TableId);
+        table.Update(cmd.Capacity, cmd.MinCapacity, cmd.Zone, cmd.IsCombinable, cmd.IsActive);
+        await tableRepo.SaveChangesAsync(ct);
+        return table.ToDto();
+    }
 }

@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Reservation.Application.DTOs;
 using Reservation.Application.Interfaces;
+using Reservation.Domain.Entities;
 using Reservation.Domain.Enums;
 
 namespace Reservation.Application.Tables.Commands;
@@ -28,5 +29,10 @@ public sealed class CreateTableCommandHandler(ITableRepository tableRepo)
     : IRequestHandler<CreateTableCommand, TableDto>
 {
     public async Task<TableDto> Handle(CreateTableCommand cmd, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var table = Table.Create(cmd.Number, cmd.Capacity, cmd.MinCapacity, cmd.Zone, cmd.IsCombinable);
+        await tableRepo.AddAsync(table, ct);
+        await tableRepo.SaveChangesAsync(ct);
+        return table.ToDto();
+    }
 }

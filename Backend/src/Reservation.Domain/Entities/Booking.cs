@@ -217,7 +217,66 @@ public sealed class Booking
         IClock clock,
         int existingServiceCovers = 0,
         IEnumerable<Booking>? existingTableBookings = null)
-        => throw new NotImplementedException();
+    {
+        // FR-22
+        if (newSpecialRequests is { Length: > 500 })
+            throw new SpecialRequestsTooLongException(500, newSpecialRequests.Length);
+
+        var today = DateOnly.FromDateTime(clock.UtcNow.Date);
+
+        // FR-8
+        if (newBookingDate < today)
+            throw new BookingDateInPastException(newBookingDate);
+
+        // FR-1
+        if (newArrivalTime < service.StartTime || newArrivalTime > service.LastBookingTime)
+            throw new TimeOutsideServiceException(newArrivalTime, service.LastBookingTime);
+
+        // FR-3
+        if (newTable is not null)
+        {
+            if (newGuestsCount < newTable.MinCapacity)
+                throw new GuestsBelowMinException(newTable.MinCapacity, newGuestsCount);
+            if (newGuestsCount > newTable.Capacity)
+                throw new GuestsExceedCapacityException(newTable.Capacity, newGuestsCount);
+        }
+
+        // FR-4 (subtract current booking's covers)
+        var coversWithoutThis = existingServiceCovers - GuestsCount;
+        if (coversWithoutThis + newGuestsCount > service.MaxCovers)
+            throw new ServiceFullyBookedException(service.MaxCovers, coversWithoutThis + newGuestsCount);
+
+        // FR-5 (exclude this booking from conflict check)
+        if (newTable is not null && existingTableBookings is not null)
+        {
+            var newStart = new DateTimeOffset(newBookingDate.ToDateTime(newArrivalTime), TimeSpan.Zero);
+            var newSlot  = new TimeSlot(newStart, newStart.AddMinutes(service.DurationMinutes));
+
+            foreach (var existing in existingTableBookings.Where(b => b.Id != Id))
+            {
+                if (newSlot.Overlaps(existing.GetTimeSlot(service)))
+                    throw new BookingConflictException(newTable.Id, existing.Id);
+            }
+        }
+
+        // FR-23
+        var hasAllergyAlert = ContainsAny(newSpecialRequests, "allergie", "intolérance");
+        var isCelebration   = ContainsAny(newSpecialRequests, "anniversaire", "mariage", "fiançailles");
+        var needsHighChair  = ContainsAny(newSpecialRequests, "chaise bébé", "siège enfant");
+
+        // FR-13: Confirmed → Pending on modification
+        if (Status == BookingStatus.Confirmed)
+            Status = BookingStatus.Pending;
+
+        TableId         = newTable?.Id;
+        BookingDate     = newBookingDate;
+        ArrivalTime     = newArrivalTime;
+        GuestsCount     = newGuestsCount;
+        SpecialRequests = newSpecialRequests;
+        HasAllergyAlert = hasAllergyAlert;
+        IsCelebration   = isCelebration;
+        NeedsHighChair  = needsHighChair;
+    }
 
     public TimeSlot GetTimeSlot(DiningService service)
     {

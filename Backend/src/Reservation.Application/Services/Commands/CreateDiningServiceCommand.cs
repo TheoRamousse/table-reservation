@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Reservation.Application.DTOs;
 using Reservation.Application.Interfaces;
+using Reservation.Domain.Entities;
 
 namespace Reservation.Application.Services.Commands;
 
@@ -27,5 +28,11 @@ public sealed class CreateDiningServiceCommandHandler(IDiningServiceRepository s
     : IRequestHandler<CreateDiningServiceCommand, DiningServiceDto>
 {
     public async Task<DiningServiceDto> Handle(CreateDiningServiceCommand cmd, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var service = DiningService.Create(cmd.Name, cmd.StartTime, cmd.EndTime,
+            cmd.LastBookingTime, cmd.DurationMinutes, cmd.MaxCovers);
+        await serviceRepo.AddAsync(service, ct);
+        await serviceRepo.SaveChangesAsync(ct);
+        return service.ToDto();
+    }
 }

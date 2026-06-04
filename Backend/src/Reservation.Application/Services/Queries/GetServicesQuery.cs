@@ -10,5 +10,8 @@ public sealed class GetServicesQueryHandler(IDiningServiceRepository serviceRepo
     : IRequestHandler<GetServicesQuery, IReadOnlyList<DiningServiceDto>>
 {
     public async Task<IReadOnlyList<DiningServiceDto>> Handle(GetServicesQuery query, CancellationToken ct)
-        => throw new NotImplementedException();
+    {
+        var services = await serviceRepo.GetAllActiveAsync(ct);
+        return services.Select(s => s.ToDto()).ToList();
+    }
 }

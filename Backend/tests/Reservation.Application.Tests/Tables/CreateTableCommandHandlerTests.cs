@@ -24,11 +24,12 @@ public class CreateTableCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task<TableDto>> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.Should().BeOfType<TableDto>("le résultat doit être un TableDto");
+        result.Number.Should().Be(1);
+        result.Capacity.Should().Be(6);
     }
 
     [Fact]
@@ -40,11 +41,11 @@ public class CreateTableCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task> act = () => handler.Handle(cmd, default);
+        await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        await _tableRepo.Received(1).AddAsync(Arg.Any<Domain.Entities.Table>(), Arg.Any<CancellationToken>());
+        await _tableRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -56,10 +57,10 @@ public class CreateTableCommandHandlerTests
         var handler = CreateHandler();
 
         // Act
-        Func<Task<TableDto>> act = () => handler.Handle(cmd, default);
+        var result = await handler.Handle(cmd, default);
 
         // Assert
-        await act.Should().ThrowAsync<NotImplementedException>(
-            "le stub lève NotImplementedException en phase RED");
+        result.Should().BeOfType<TableDto>("le handler doit retourner un TableDto");
+        result.Id.Should().NotBeEmpty("l'ID de la table doit être généré");
     }
 }

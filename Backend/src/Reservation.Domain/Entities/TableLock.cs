@@ -20,5 +20,5 @@ public sealed class TableLock
     }
 
     public static TableLock Create(Guid bookingId, Guid primaryTableId, Guid secondaryTableId, DateTimeOffset now)
-        => throw new NotImplementedException();
+        => new(Guid.NewGuid(), bookingId, primaryTableId, secondaryTableId, now);
 }

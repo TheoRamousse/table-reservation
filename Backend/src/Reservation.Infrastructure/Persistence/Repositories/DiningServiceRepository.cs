@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Reservation.Application.Interfaces;
 using Reservation.Domain.Entities;
 
@@ -8,12 +9,12 @@ public sealed class DiningServiceRepository(ReservationDbContext db) : IDiningSe
     public async Task<DiningService?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await db.DiningServices.FindAsync([id], ct);
 
-    public Task<IEnumerable<DiningService>> GetAllActiveAsync(CancellationToken ct = default)
-        => throw new NotImplementedException();
+    public async Task<IEnumerable<DiningService>> GetAllActiveAsync(CancellationToken ct = default)
+        => await db.DiningServices.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync(ct);
 
-    public Task AddAsync(DiningService service, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    public async Task AddAsync(DiningService service, CancellationToken ct = default)
+        => await db.DiningServices.AddAsync(service, ct);
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => throw new NotImplementedException();
+    public async Task SaveChangesAsync(CancellationToken ct = default)
+        => await db.SaveChangesAsync(ct);
 }

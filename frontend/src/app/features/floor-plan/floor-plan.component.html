@@ -1,3 +1,24 @@
+<mat-drawer-container class="min-h-screen" autosize>
+
+  <!-- Drawer : formulaire de réservation (table libre) -->
+  <mat-drawer position="end" mode="over" class="w-full sm:w-[480px] shadow-xl"
+              [opened]="drawerOpen()" (openedChange)="drawerOpen.set($event)">
+    @if (drawerTable()) {
+      <app-booking-form
+        [drawerMode]="true"
+        [prefilledTableId]="drawerTable()!.id"
+        [prefilledTableNumber]="drawerTable()!.number"
+        [prefilledTableZone]="drawerTable()!.zone"
+        [prefilledTableCapacity]="drawerTable()!.capacity"
+        [prefilledDate]="selectedDate()"
+        [prefilledServiceId]="selectedServiceId()"
+        [prefilledGuestsCount]="2"
+        (bookingCreated)="onBookingCreated()"
+        (closed)="onDrawerClose()" />
+    }
+  </mat-drawer>
+
+  <mat-drawer-content>
 <div class="min-h-screen bg-gray-50 flex flex-col">
 
   <!-- En-tête sticky -->
@@ -140,3 +161,6 @@
     }
   </footer>
 </div>
+  </mat-drawer-content>
+
+</mat-drawer-container>

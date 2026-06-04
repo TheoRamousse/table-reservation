@@ -13,6 +13,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/floor-plan/floor-plan.component').then(m => m.FloorPlanComponent),
   },
+  {
+    path: 'availability',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/availability/availability-search.component').then(m => m.AvailabilitySearchComponent),
+  },
+  {
+    path: 'bookings/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/booking/booking-form.component').then(m => m.BookingFormComponent),
+  },
   { path: '', redirectTo: 'floor', pathMatch: 'full' },
   { path: '**', redirectTo: 'floor' },
 ];

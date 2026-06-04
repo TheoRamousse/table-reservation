@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/com
 import { of, throwError } from 'rxjs';
 import { FloorSnapshot } from '../models/floor-snapshot.model';
 import { DiningService } from '../models/dining-service.model';
+import { Customer, VipLevel } from '../models/customer.model';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,12 @@ const MOCK_SNAPSHOT: FloorSnapshot = {
   ],
 };
 
+const MOCK_CUSTOMERS: Customer[] = [
+  { id: 'c1', firstName: 'Jean', lastName: 'Dupont', phone: '0601020304', email: 'jean.dupont@example.com', isBlacklisted: false, noShowCount: 0, vipLevel: VipLevel.None },
+  { id: 'c2', firstName: 'Sophie', lastName: 'Martin', phone: '0605060708', email: 'sophie.martin@example.com', isBlacklisted: false, noShowCount: 1, vipLevel: VipLevel.Regular },
+  { id: 'c3', firstName: 'Pierre', lastName: 'Noshow', phone: '0611121314', email: 'noshow@example.com', isBlacklisted: true, noShowCount: 3, vipLevel: VipLevel.None },
+];
+
 // ── Intercepteur ──────────────────────────────────────────────────────────────
 
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
@@ -79,6 +86,73 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.method === 'PATCH' && req.url.match(/\/api\/bookings\/[^/]+\/status/)) {
     const body = req.body as { newStatus: string };
     return of(new HttpResponse({ status: 200, body: { status: body.newStatus } }));
+  }
+
+  // GET /api/tables/availability
+  if (req.method === 'GET' && req.url.includes('/api/tables/availability')) {
+    const params = new URL(req.urlWithParams, 'http://localhost').searchParams;
+    const guestsCount = parseInt(params.get('guestsCount') ?? '2', 10);
+    const zone = params.get('zone');
+    const tables = MOCK_SNAPSHOT.tables
+      .filter(t => t.status === 'Free' && t.isActive)
+      .filter(t => guestsCount >= t.minCapacity && guestsCount <= t.capacity)
+      .filter(t => !zone || t.zone === zone)
+      .map(({ id, number, capacity, minCapacity, zone: z, isCombinable }) => ({ id, number, capacity, minCapacity, zone: z, isCombinable }))
+      .sort((a, b) => a.capacity - b.capacity);
+    return of(new HttpResponse({ status: 200, body: { tables, reason: null } }));
+  }
+
+  // GET /api/customers (search — exclut /api/customers/{id}/...)
+  if (req.method === 'GET' && req.url.includes('/api/customers') && !req.url.includes('/api/customers/')) {
+    const params = new URL(req.urlWithParams, 'http://localhost').searchParams;
+    const phone = params.get('phone') ?? '';
+    const email = params.get('email') ?? '';
+    const found = MOCK_CUSTOMERS.filter(c =>
+      (phone && c.phone.includes(phone)) || (email && (c.email ?? '').includes(email))
+    );
+    return of(new HttpResponse({ status: 200, body: { customers: found } }));
+  }
+
+  // POST /api/customers
+  if (req.method === 'POST' && req.url.endsWith('/api/customers')) {
+    const body = req.body as Partial<Customer>;
+    const created: Customer = {
+      id: `c-${Math.random().toString(36).slice(2, 8)}`,
+      firstName: body.firstName ?? '',
+      lastName: body.lastName ?? '',
+      phone: body.phone ?? '',
+      email: (body as any).email ?? null,
+      isBlacklisted: false,
+      noShowCount: 0,
+      vipLevel: VipLevel.None,
+    };
+    return of(new HttpResponse({ status: 201, body: created }));
+  }
+
+  // POST /api/bookings
+  if (req.method === 'POST' && req.url.endsWith('/api/bookings')) {
+    const body = req.body as any;
+    const sr: string = body.specialRequests ?? '';
+    const booking = {
+      id: `b-${Math.random().toString(36).slice(2, 8)}`,
+      tableId: body.tableId ?? null,
+      customerId: body.customerId,
+      serviceId: body.serviceId,
+      bookingDate: body.bookingDate,
+      arrivalTime: body.arrivalTime,
+      guestsCount: body.guestsCount,
+      status: 'Pending',
+      source: body.source,
+      specialRequests: sr || null,
+      hasAllergyAlert: /allergi/i.test(sr),
+      isCelebration: /anniversaire|célébration|fête/i.test(sr),
+      needsHighChair: /chaise|bébé|enfant/i.test(sr),
+      lateCancel: false,
+      cancellationReason: null,
+      recurrenceGroupId: null,
+      createdAt: new Date().toISOString(),
+    };
+    return of(new HttpResponse({ status: 201, body: booking }));
   }
 
   return next(req);

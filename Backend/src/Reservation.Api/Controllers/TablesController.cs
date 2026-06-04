@@ -14,6 +14,15 @@ namespace Reservation.Api.Controllers;
 [Authorize]
 public sealed class TablesController(IMediator mediator) : ControllerBase
 {
+    [Authorize(Roles = "Admin")]
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetAll(CancellationToken ct)
+    {
+        var dtos = await mediator.Send(new GetTablesQuery(), ct);
+        return Ok(new { tables = dtos });
+    }
+
     [HttpGet("availability")]
     [ProducesResponseType<AvailabilityResultDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AvailabilityResultDto>> GetAvailability(

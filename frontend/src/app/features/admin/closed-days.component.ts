@@ -21,7 +21,7 @@ import { HttpClient } from '@angular/common/http';
 
 export interface ClosedDayDto {
   id: string;
-  date: string;
+  closedDate: string;
   reason: string;
 }
 
@@ -149,10 +149,11 @@ export class ClosedDaysComponent {
   private loadClosedDays(): void {
     this.isLoading.set(true);
     this.http
-      .get<ClosedDayDto[]>('/api/closed-days')
+      .get<{ closedDays: ClosedDayDto[] }>('/api/closed-days')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: days => {
+        next: res => {
+          const days = res.closedDays;
           this.closedDays.set(days);
           this.isLoading.set(false);
         },

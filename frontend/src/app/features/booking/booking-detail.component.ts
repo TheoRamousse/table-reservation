@@ -178,7 +178,7 @@ export class BookingDetailComponent {
   private updateStatus(newStatus: string, successMessage: string): void {
     this.isLoading.set(true);
     this.http
-      .put(`/api/bookings/${this.booking().bookingId}`, { status: newStatus })
+      .patch(`/api/bookings/${this.booking().bookingId}/status`, { newStatus })
       .subscribe({
         next: () => {
           this.isLoading.set(false);

@@ -240,10 +240,11 @@ export class TableManagementComponent {
   private loadTables(): void {
     this.isLoading.set(true);
     this.http
-      .get<TableRow[]>('/api/tables')
+      .get<{ tables: TableRow[] }>('/api/tables')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: tables => {
+        next: res => {
+          const tables = res.tables;
           this.tables.set(tables);
           this.isLoading.set(false);
         },

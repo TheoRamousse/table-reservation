@@ -7,7 +7,7 @@ namespace Reservation.Infrastructure.Persistence.Repositories;
 public sealed class CustomerRepository(ReservationDbContext db) : ICustomerRepository
 {
     public async Task<Customer?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await db.Customers.FindAsync([id], ct);
+        => await db.Customers.FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public async Task<Customer?> GetByPhoneAsync(string phone, CancellationToken ct = default)
         => await db.Customers.FirstOrDefaultAsync(c => c.Phone == phone, ct);

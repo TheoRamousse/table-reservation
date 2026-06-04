@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { Router } from '@angular/router';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { switchMap, filter } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { filter, switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -11,8 +20,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { format } from 'date-fns';
 import { FloorService } from '../../core/services/floor.service';
+import { FloorHubService } from '../../core/services/floor-hub.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DiningService } from '../../core/models/dining-service.model';
 import { FloorSnapshot } from '../../core/models/floor-snapshot.model';
@@ -33,29 +44,28 @@ import { TableCardComponent } from './components/table-card/table-card.component
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatTooltipModule,
     TableCardComponent,
   ],
 })
 export class FloorPlanComponent {
+  // 1. Injections
   private readonly floorService = inject(FloorService);
+  private readonly floorHub = inject(FloorHubService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
+  // 2. Signals d'état
   protected readonly selectedDate = signal<string>(format(new Date(), 'yyyy-MM-dd'));
   protected readonly selectedServiceId = signal<string>('');
+  protected readonly snapshot = signal<FloorSnapshot | null>(null);
+  protected readonly connectionState = this.floorHub.connectionState;
 
+  // 3. Signals dérivés
   protected readonly services = toSignal(this.floorService.getServices(), { initialValue: [] as DiningService[] });
-
-  private readonly params$ = toObservable(
-    computed(() => ({ date: this.selectedDate(), serviceId: this.selectedServiceId() }))
-  ).pipe(
-    filter(p => !!p.serviceId),
-    switchMap(p => this.floorService.getSnapshot(p.date, p.serviceId))
-  );
-
-  protected readonly snapshot = toSignal<FloorSnapshot | null>(this.params$, { initialValue: null });
 
   protected readonly tablesByZone = computed(() => {
     const tables = this.snapshot()?.tables ?? [];
@@ -68,8 +78,71 @@ export class FloorPlanComponent {
     return [...map.entries()].map(([zone, zoneTables]) => ({ zone, tables: zoneTables }));
   });
 
-  protected readonly isLoading = computed(() => this.selectedServiceId() !== '' && this.snapshot() === null);
+  protected readonly isLoading = computed(
+    () => this.selectedServiceId() !== '' && this.snapshot() === null,
+  );
 
+  protected readonly connectionTooltip = computed(() => {
+    switch (this.connectionState()) {
+      case 'connected':  return 'Temps réel actif';
+      case 'connecting': return 'Connexion en cours…';
+      default:           return 'Hors ligne';
+    }
+  });
+
+  // 4. Effects et souscriptions
+
+  // Connecte le hub quand date ou service change
+  readonly #connectEffect = effect(() => {
+    const date = this.selectedDate();
+    const serviceId = this.selectedServiceId();
+    if (!serviceId) return;
+    untracked(() => this.floorHub.connect(date, serviceId));
+  });
+
+  // Recharge le snapshot dès que connexion ET service sont disponibles (initial + reconnexion — AC 3.3.1, 3.3.3)
+  // Le computed combine les trois signaux pour éviter la race condition entre connectionState et selectedServiceId
+  readonly #snapshotOnConnect = toObservable(
+    computed(() => ({
+      state: this.floorHub.connectionState(),
+      date: this.selectedDate(),
+      serviceId: this.selectedServiceId(),
+    })),
+  ).pipe(
+    filter(({ state, serviceId }) => state === 'connected' && !!serviceId),
+    switchMap(({ date, serviceId }) => {
+      this.snapshot.set(null);
+      return this.floorService.getSnapshot(date, serviceId);
+    }),
+    takeUntilDestroyed(this.destroyRef),
+  ).subscribe(snap => this.snapshot.set(snap));
+
+  // Patche le statut d'une table sur événement SignalR (AC 3.3.2)
+  readonly #tableStatusSub = this.floorHub.tableStatusChanged$.pipe(
+    takeUntilDestroyed(this.destroyRef),
+  ).subscribe(event => {
+    this.snapshot.update(s => {
+      if (!s) return s;
+      return {
+        ...s,
+        tables: s.tables.map(t =>
+          t.id === event.tableId ? { ...t, status: event.newStatus } : t,
+        ),
+      };
+    });
+  });
+
+  // Met à jour le compteur de couverts (AC 3.3.4)
+  readonly #capacitySub = this.floorHub.serviceCapacityChanged$.pipe(
+    takeUntilDestroyed(this.destroyRef),
+  ).subscribe(event => {
+    this.snapshot.update(s => {
+      if (!s) return s;
+      return { ...s, totalConfirmedCovers: s.maxCovers - event.remainingCovers };
+    });
+  });
+
+  // Auto-sélection du premier service
   readonly #autoSelectService = effect(() => {
     const svcs = this.services();
     if (svcs.length > 0 && !this.selectedServiceId()) {
@@ -77,19 +150,14 @@ export class FloorPlanComponent {
     }
   });
 
+  // 5. Handlers de template
+
   protected onDateChange(event: Event): void {
     this.selectedDate.set((event.target as HTMLInputElement).value);
   }
 
   protected onServiceSelected(serviceId: string): void {
     this.selectedServiceId.set(serviceId);
-  }
-
-  protected onServicesLoaded(): void {
-    const svcs = this.services();
-    if (svcs.length > 0 && !this.selectedServiceId()) {
-      this.selectedServiceId.set(svcs[0].id);
-    }
   }
 
   protected onTableClick(table: TableState): void {
@@ -108,6 +176,12 @@ export class FloorPlanComponent {
         this.snackBar.open(`Table ${table.number} — ${table.status}`, 'Fermer', { duration: 2000 });
     }
   }
+
+  protected logout(): void {
+    this.authService.logout();
+  }
+
+  // 6. Méthodes privées
 
   private openConfirmSeatDialog(table: TableState): void {
     const booking = table.activeBooking!;
@@ -143,10 +217,6 @@ export class FloorPlanComponent {
         error: () => {},
       });
     });
-  }
-
-  protected logout(): void {
-    this.authService.logout();
   }
 }
 

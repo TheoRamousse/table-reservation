@@ -16,3 +16,10 @@ public record CreateBookingRequest(
 public record ChangeBookingStatusRequest(BookingStatus NewStatus);
 
 public record CancelBookingRequest(string CancellationReason);
+
+public record ModifyBookingRequest(
+    DateOnly BookingDate,
+    TimeOnly ArrivalTime,
+    int GuestsCount,
+    string? SpecialRequests,
+    Guid? TableId);

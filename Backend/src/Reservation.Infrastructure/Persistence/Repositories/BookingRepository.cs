@@ -39,6 +39,17 @@ public sealed class BookingRepository(ReservationDbContext db) : IBookingReposit
             .OrderByDescending(b => b.BookingDate)
             .ToListAsync(ct);
 
+    public async Task<IEnumerable<Booking>> GetByDateAndServiceAsync(DateOnly date, Guid serviceId, CancellationToken ct = default)
+        => await db.Bookings
+            .Where(b => b.BookingDate == date && b.ServiceId == serviceId)
+            .ToListAsync(ct);
+
+    public async Task<IEnumerable<Booking>> GetPendingAndConfirmedByDateAsync(DateOnly date, CancellationToken ct = default)
+        => await db.Bookings
+            .Where(b => b.BookingDate == date
+                     && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
+            .ToListAsync(ct);
+
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await db.SaveChangesAsync(ct);
 }

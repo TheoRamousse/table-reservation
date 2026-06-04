@@ -9,6 +9,8 @@ public sealed class ReservationDbContext(DbContextOptions<ReservationDbContext> 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Table> Tables => Set<Table>();
     public DbSet<DiningService> DiningServices => Set<DiningService>();
+    public DbSet<ClosedDay> ClosedDays => Set<ClosedDay>();
+    public DbSet<TableLock> TableLocks => Set<TableLock>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

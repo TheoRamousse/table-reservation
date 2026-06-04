@@ -15,5 +15,7 @@ public interface IBookingRepository
     Task<IEnumerable<Booking>> GetActiveTableBookingsAsync(Guid tableId, DateOnly date, CancellationToken ct = default);
 
     Task<IEnumerable<Booking>> GetByCustomerIdAsync(Guid customerId, CancellationToken ct = default);
+    Task<IEnumerable<Booking>> GetByDateAndServiceAsync(DateOnly date, Guid serviceId, CancellationToken ct = default);
+    Task<IEnumerable<Booking>> GetPendingAndConfirmedByDateAsync(DateOnly date, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

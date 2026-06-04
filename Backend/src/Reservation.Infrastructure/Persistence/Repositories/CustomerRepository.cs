@@ -15,6 +15,13 @@ public sealed class CustomerRepository(ReservationDbContext db) : ICustomerRepos
     public async Task<Customer?> GetByEmailAsync(string email, CancellationToken ct = default)
         => await db.Customers.FirstOrDefaultAsync(c => c.Email == email, ct);
 
+    public async Task<IEnumerable<Customer>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0) return [];
+        return await db.Customers.Where(c => idList.Contains(c.Id)).ToListAsync(ct);
+    }
+
     public async Task AddAsync(Customer customer, CancellationToken ct = default)
         => await db.Customers.AddAsync(customer, ct);
 

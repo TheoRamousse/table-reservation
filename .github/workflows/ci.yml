@@ -4,7 +4,12 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'fix/**'
+      - 'test/**'
 
 jobs:
 
@@ -38,15 +43,15 @@ jobs:
         run: dotnet test Reservation.sln --no-build --configuration Release --filter "Category=Unit"
 
       - name: Publish
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         run: dotnet publish src/Reservation.Api/Reservation.Api.csproj --configuration Release --output ./publish/api
 
       - name: Zip
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         run: cd publish && zip -r ../reservation-api.zip api/
 
       - name: Upload artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         uses: actions/upload-artifact@v4
         with:
           name: reservation-api [${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOP' }}]
@@ -81,17 +86,17 @@ jobs:
         working-directory: frontend
 
       - name: Build production
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         run: npm run build -- --configuration production
         working-directory: frontend
 
       - name: Zip
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         run: zip -r reservation-frontend.zip dist/
         working-directory: frontend
 
       - name: Upload artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
         uses: actions/upload-artifact@v4
         with:
           name: reservation-frontend [${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOP' }}]

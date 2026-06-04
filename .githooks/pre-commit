@@ -1,0 +1,19 @@
+#!/bin/bash
+# Hook git pre-commit — lancé automatiquement avant chaque commit.
+# Activation : git config core.hooksPath .githooks
+
+echo "--- Tests unitaires avant commit ---"
+
+dotnet test --filter "Category=Unit" --no-build --nologo 2>&1
+
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "COMMIT BLOQUÉ : des tests unitaires sont en échec."
+  echo "Corriger les tests avant de committer."
+  exit 1
+fi
+
+echo "Tests OK — commit autorisé."
+exit 0

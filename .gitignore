@@ -1,0 +1,45 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.nupkg
+*.snupkg
+TestResults/
+coverage/
+StrykerOutput/
+
+# EF Core
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets / config locaux
+appsettings.Development.json
+appsettings.Local.json
+.env
+.env.*
+!.env.example
+secrets.json
+
+# Angular
+node_modules/
+dist/
+.angular/
+.cache/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/

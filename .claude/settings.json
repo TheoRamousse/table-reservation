@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cmd=$(python3 -c \"import os,json; d=json.loads(os.environ.get(\\\"CLAUDE_TOOL_INPUT\\\",\\\"{}\\\")); print(d.get(\\\"command\\\",\\\"\\\"))\"); if echo \"$cmd\" | grep -qE \"git commit\"; then echo \"--- Tests unitaires avant commit ---\"; dotnet test --filter Category=Unit --no-build --nologo || exit 2; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}

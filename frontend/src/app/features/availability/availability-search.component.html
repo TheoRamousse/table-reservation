@@ -1,0 +1,168 @@
+<div class="min-h-screen bg-gray-50 flex flex-col">
+
+  <!-- Hero / Formulaire de recherche -->
+  <div class="bg-white border-b shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <h1 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-6">
+        <mat-icon class="text-gray-500" aria-hidden="true">restaurant</mat-icon>
+        Réserver une table
+      </h1>
+
+      <form [formGroup]="searchForm" (ngSubmit)="onSearch()"
+            class="flex flex-col sm:flex-row flex-wrap gap-3 items-start">
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-36">
+          <mat-label>Date</mat-label>
+          <input matInput type="date" formControlName="date" [min]="today" aria-required="true" />
+          <mat-error>Choisissez une date à partir d'aujourd'hui</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-44">
+          <mat-label>Service</mat-label>
+          <mat-select formControlName="serviceId" aria-required="true">
+            @for (svc of services(); track svc.id) {
+              <mat-option [value]="svc.id">{{ svc.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>Sélectionnez un service</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-32">
+          <mat-label>Couverts</mat-label>
+          <input matInput type="number" formControlName="guestsCount"
+                 min="1" max="30" aria-required="true" />
+          <mat-error>Entrez un nombre de personnes valide</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-36">
+          <mat-label>Zone</mat-label>
+          <mat-select formControlName="zone">
+            <mat-option [value]="null">Toutes zones</mat-option>
+            <mat-option value="Salle">Salle</mat-option>
+            <mat-option value="Terrasse">Terrasse</mat-option>
+            <mat-option value="Bar">Bar</mat-option>
+            <mat-option value="SalonPrive">Salon privé</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" type="submit"
+                class="px-8 self-start"
+                [disabled]="searchForm.invalid || isSearching()">
+          @if (isSearching()) {
+            <mat-spinner diameter="20" />
+            Recherche en cours…
+          } @else {
+            Rechercher les disponibilités
+          }
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Zone de résultats -->
+  <div class="flex-1 max-w-4xl mx-auto w-full px-4 py-8" aria-live="polite">
+    @switch (searchState()) {
+      @case ('idle') {
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <mat-icon class="!text-5xl !text-gray-300 mb-3" aria-hidden="true">event</mat-icon>
+          <p class="text-gray-500">
+            Renseignez vos critères ci-dessus<br>
+            pour découvrir les tables disponibles.
+          </p>
+        </div>
+      }
+
+      @case ('loading') {
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" aria-busy="true">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="rounded-lg bg-gray-100 animate-pulse h-36" aria-hidden="true"></div>
+          }
+        </div>
+      }
+
+      @case ('done') {
+        @if (fullyBooked()) {
+          <div class="flex flex-col items-center justify-center py-16 text-center
+                      bg-white rounded-xl border border-gray-100 shadow-sm gap-3">
+            <mat-icon class="!text-5xl !text-blue-300" aria-hidden="true">event_busy</mat-icon>
+            <p class="text-gray-800 font-semibold">Service complet</p>
+            <p class="text-gray-500 text-sm">
+              Le service {{ lastServiceName() }} est complet pour cette date.<br>
+              Toutes les places sont réservées.
+            </p>
+            <div class="flex gap-3 flex-wrap justify-center">
+              <button mat-stroked-button (click)="resetDate()">Choisir une autre date</button>
+              <button mat-stroked-button (click)="resetService()">Choisir un autre service</button>
+            </div>
+          </div>
+        } @else if (results().length === 0) {
+          <div class="flex flex-col items-center justify-center py-16 text-center
+                      bg-white rounded-xl border border-gray-100 shadow-sm gap-3">
+            <mat-icon class="!text-5xl !text-gray-300" aria-hidden="true">sentiment_dissatisfied</mat-icon>
+            <p class="text-gray-800 font-semibold">Aucune table disponible</p>
+            <p class="text-gray-500 text-sm">
+              Nous n'avons pas de table pour
+              {{ lastGuestsCount() }} couvert{{ lastGuestsCount() > 1 ? 's' : '' }}
+              pour ce service.
+            </p>
+            <ul class="text-left text-sm text-gray-500 list-disc list-inside space-y-1">
+              <li>Essayez une autre date</li>
+              <li>Essayez un autre service</li>
+              @if (lastZoneFiltered()) {
+                <li>Retirez le filtre de zone</li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <p class="text-sm text-gray-600 mb-4">
+            <strong>{{ results().length }} table{{ results().length > 1 ? 's' : '' }}</strong>
+            disponible{{ results().length > 1 ? 's' : '' }}
+            pour le <strong>{{ lastServiceName() }}</strong>
+            ·
+            <strong>
+              {{ lastGuestsCount() }} couvert{{ lastGuestsCount() > 1 ? 's' : '' }}
+            </strong>
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            @for (table of results(); track table.id) {
+              <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col"
+                       [attr.aria-label]="'Table T' + table.number + ', ' + table.capacity + ' personnes, ' + table.zone">
+
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-gray-800 text-lg">T{{ table.number }}</span>
+                  <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    {{ table.zone }}
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-2 my-2">
+                  <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+                    <div class="bg-green-500 h-1.5 rounded-full"
+                         [style.width.%]="(lastGuestsCount() / table.capacity) * 100"
+                         role="progressbar"
+                         [attr.aria-valuenow]="lastGuestsCount()"
+                         [attr.aria-valuemax]="table.capacity"
+                         [attr.aria-label]="lastGuestsCount() + ' sur ' + table.capacity + ' places'">
+                    </div>
+                  </div>
+                  <span class="text-xs text-gray-500">{{ table.capacity }} pers.</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">
+                  Adapté pour {{ table.minCapacity }} à {{ table.capacity }} convives
+                </p>
+
+                <button mat-flat-button color="primary" class="w-full mt-auto"
+                        (click)="onChooseTable(table)"
+                        [attr.aria-label]="'Choisir la table T' + table.number + ', ' + table.capacity + ' personnes, ' + table.zone">
+                  Choisir cette table
+                  <mat-icon matIconSuffix>arrow_forward</mat-icon>
+                </button>
+              </article>
+            }
+          </div>
+        }
+      }
+    }
+  </div>
+</div>

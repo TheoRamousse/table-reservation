@@ -1,0 +1,166 @@
+<mat-drawer-container class="min-h-screen" autosize>
+
+  <!-- Drawer : formulaire de réservation (table libre) -->
+  <mat-drawer position="end" mode="over" class="w-full sm:w-[480px] shadow-xl"
+              [opened]="drawerOpen()" (openedChange)="drawerOpen.set($event)">
+    @if (drawerTable()) {
+      <app-booking-form
+        [drawerMode]="true"
+        [prefilledTableId]="drawerTable()!.id"
+        [prefilledTableNumber]="drawerTable()!.number"
+        [prefilledTableZone]="drawerTable()!.zone"
+        [prefilledTableCapacity]="drawerTable()!.capacity"
+        [prefilledDate]="selectedDate()"
+        [prefilledServiceId]="selectedServiceId()"
+        [prefilledGuestsCount]="2"
+        (bookingCreated)="onBookingCreated()"
+        (closed)="onDrawerClose()" />
+    }
+  </mat-drawer>
+
+  <mat-drawer-content>
+<div class="min-h-screen bg-gray-50 flex flex-col">
+
+  <!-- En-tête sticky -->
+  <header class="bg-white border-b px-6 py-3 flex flex-wrap items-center gap-4 sticky top-0 z-10 shadow-sm">
+
+    <!-- Titre + icône -->
+    <h1 class="flex items-center gap-2 text-lg font-semibold text-gray-800 shrink-0">
+      <mat-icon class="text-gray-500" aria-hidden="true">table_restaurant</mat-icon>
+      Vue Salle
+    </h1>
+
+    <!-- Sélecteur date -->
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0 w-36">
+      <mat-label>Date</mat-label>
+      <input matInput type="date" [value]="selectedDate()" (change)="onDateChange($event)" />
+    </mat-form-field>
+
+    <!-- Sélecteur service -->
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0 min-w-44">
+      <mat-label>Service</mat-label>
+      <mat-select [value]="selectedServiceId()" (valueChange)="onServiceSelected($event)">
+        @for (svc of services(); track svc.id) {
+          <mat-option [value]="svc.id">{{ svc.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Compteur de couverts avec alerte de capacité -->
+    @if (snapshot()) {
+      <span
+        class="text-sm font-mono"
+        [class]="(snapshot()!.totalConfirmedCovers / snapshot()!.maxCovers) >= 0.9
+          ? 'text-red-600 font-bold'
+          : (snapshot()!.totalConfirmedCovers / snapshot()!.maxCovers) >= 0.7
+            ? 'text-amber-600 font-semibold'
+            : 'text-gray-600'"
+      >
+        <strong>{{ snapshot()!.totalConfirmedCovers }}</strong> / {{ snapshot()!.maxCovers }} couverts
+      </span>
+    }
+
+    <!-- Badge état de connexion SignalR -->
+    <span
+      data-connection-state
+      class="flex items-center gap-1.5 text-xs ml-auto mr-2"
+      [matTooltip]="connectionTooltip()"
+      aria-label="État de la connexion temps réel"
+    >
+      @switch (connectionState()) {
+        @case ('connected') {
+          <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></span>
+          <span class="text-green-700 hidden sm:inline">Temps réel</span>
+        }
+        @case ('connecting') {
+          <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" aria-hidden="true"></span>
+          <span class="text-yellow-700 hidden sm:inline">Connexion…</span>
+        }
+        @default {
+          <span class="inline-block w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"></span>
+          <span class="text-gray-500 hidden sm:inline">Hors ligne</span>
+        }
+      }
+    </span>
+
+    <button mat-icon-button (click)="logout()" aria-label="Déconnexion" title="Déconnexion">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </header>
+
+  <!-- Contenu principal -->
+  @if (isLoading()) {
+    <div class="flex-1 flex items-center justify-center">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (!selectedServiceId()) {
+    <!-- Aucun service sélectionné -->
+    <div class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
+      <mat-icon class="!text-5xl !text-gray-300" aria-hidden="true">table_restaurant</mat-icon>
+      <p class="text-sm">Sélectionnez un service pour afficher la salle.</p>
+    </div>
+  } @else if (tablesByZone().length === 0) {
+    <!-- Snapshot vide — aucune table active -->
+    <div class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
+      <mat-icon class="!text-5xl !text-gray-300" aria-hidden="true">inventory_2</mat-icon>
+      <p class="text-sm">Aucune table active pour ce service.</p>
+    </div>
+  } @else {
+    <main class="flex-1 p-6 space-y-8">
+      @for (group of tablesByZone(); track group.zone) {
+        <section>
+          <!-- En-tête de zone avec icône et compteur -->
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            @switch (group.zone) {
+              @case ('Salle') {
+                <mat-icon class="!text-base text-gray-400" aria-hidden="true">table_restaurant</mat-icon>
+              }
+              @case ('Terrasse') {
+                <mat-icon class="!text-base text-gray-400" aria-hidden="true">deck</mat-icon>
+              }
+              @case ('Bar') {
+                <mat-icon class="!text-base text-gray-400" aria-hidden="true">local_bar</mat-icon>
+              }
+              @case ('SalonPrive') {
+                <mat-icon class="!text-base text-gray-400" aria-hidden="true">meeting_room</mat-icon>
+              }
+              @default {
+                <mat-icon class="!text-base text-gray-400" aria-hidden="true">chair</mat-icon>
+              }
+            }
+            {{ group.zone }}
+            <span class="text-gray-300 font-normal normal-case tracking-normal text-xs">
+              ({{ group.tables.length }} tables)
+            </span>
+          </h2>
+
+          <!-- Grille responsive — auto-rows-fr pour hauteur uniforme -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 auto-rows-fr">
+            @for (table of group.tables; track table.id) {
+              <app-table-card [table]="table" (tableClick)="onTableClick($event)" />
+            }
+          </div>
+        </section>
+      }
+    </main>
+  }
+
+  <!-- Légende des couleurs -->
+  <footer class="bg-white border-t px-6 py-2 flex flex-wrap gap-4 text-xs text-gray-600">
+    @for (item of [
+      { label: 'Libre',      cls: 'status-libre' },
+      { label: 'En attente', cls: 'status-en-attente' },
+      { label: 'Réservée',   cls: 'status-reservee' },
+      { label: 'Occupée',    cls: 'status-occupee' },
+      { label: 'No-show',    cls: 'status-noshow' }
+    ]; track item.label) {
+      <span class="flex items-center gap-1.5" [title]="item.label">
+        <span class="inline-block w-3 h-3 rounded-full" [class]="item.cls" aria-hidden="true"></span>
+        {{ item.label }}
+      </span>
+    }
+  </footer>
+</div>
+  </mat-drawer-content>
+
+</mat-drawer-container>

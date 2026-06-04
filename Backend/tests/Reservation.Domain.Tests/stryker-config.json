@@ -1,0 +1,19 @@
+{
+  "stryker-config": {
+    "project": "Reservation.Domain.csproj",
+    "test-projects": [
+      "."
+    ],
+    "reporters": [
+      "html",
+      "json",
+      "progress"
+    ],
+    "mutation-level": "Standard",
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 50
+    }
+  }
+}

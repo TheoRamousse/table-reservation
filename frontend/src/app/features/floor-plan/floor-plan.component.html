@@ -1,0 +1,73 @@
+<div class="min-h-screen bg-gray-50 flex flex-col">
+
+  <!-- En-tête -->
+  <header class="bg-white border-b px-6 py-3 flex flex-wrap items-center gap-4 sticky top-0 z-10 shadow-sm">
+    <h1 class="text-lg font-semibold text-gray-800 shrink-0">Vue Salle</h1>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0">
+      <mat-label>Date</mat-label>
+      <input matInput type="date" [value]="selectedDate()" (change)="onDateChange($event)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0 min-w-36">
+      <mat-label>Service</mat-label>
+      <mat-select [value]="selectedServiceId()" (valueChange)="onServiceSelected($event)">
+        @for (svc of services(); track svc.id) {
+          <mat-option [value]="svc.id">{{ svc.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (snapshot()) {
+      <span class="text-sm text-gray-600">
+        <strong>{{ snapshot()!.totalConfirmedCovers }}</strong> / {{ snapshot()!.maxCovers }} couverts
+      </span>
+    }
+
+    <button mat-icon-button class="ml-auto" (click)="logout()" aria-label="Déconnexion" title="Déconnexion">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </header>
+
+  <!-- Contenu principal -->
+  @if (isLoading()) {
+    <div class="flex-1 flex items-center justify-center">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (!selectedServiceId()) {
+    <div class="flex-1 flex items-center justify-center text-gray-400">
+      Sélectionnez un service pour afficher la salle.
+    </div>
+  } @else {
+    <main class="flex-1 p-6 space-y-8">
+      @for (group of tablesByZone(); track group.zone) {
+        <section>
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            {{ group.zone }}
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            @for (table of group.tables; track table.id) {
+              <app-table-card [table]="table" (tableClick)="onTableClick($event)" />
+            }
+          </div>
+        </section>
+      }
+    </main>
+  }
+
+  <!-- Légende des couleurs -->
+  <footer class="bg-white border-t px-6 py-2 flex flex-wrap gap-4 text-xs text-gray-600">
+    @for (item of [
+      { label: 'Libre', cls: 'status-libre' },
+      { label: 'En attente', cls: 'status-en-attente' },
+      { label: 'Réservée', cls: 'status-reservee' },
+      { label: 'Occupée', cls: 'status-occupee' },
+      { label: 'No-show', cls: 'status-noshow' }
+    ]; track item.label) {
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block w-3 h-3 rounded-full" [class]="item.cls"></span>
+        {{ item.label }}
+      </span>
+    }
+  </footer>
+</div>

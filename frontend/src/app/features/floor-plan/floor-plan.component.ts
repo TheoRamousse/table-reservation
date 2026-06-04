@@ -19,8 +19,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { BookingFormComponent } from '../booking/booking-form.component';
 import { format } from 'date-fns';
 import { FloorService } from '../../core/services/floor.service';
 import { FloorHubService } from '../../core/services/floor-hub.service';
@@ -44,8 +46,10 @@ import { TableCardComponent } from './components/table-card/table-card.component
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatSidenavModule,
     MatTooltipModule,
     TableCardComponent,
+    BookingFormComponent,
   ],
 })
 export class FloorPlanComponent {
@@ -63,6 +67,8 @@ export class FloorPlanComponent {
   protected readonly selectedServiceId = signal<string>('');
   protected readonly snapshot = signal<FloorSnapshot | null>(null);
   protected readonly connectionState = this.floorHub.connectionState;
+  protected readonly drawerOpen = signal(false);
+  protected readonly drawerTable = signal<TableState | null>(null);
 
   // 3. Signals dérivés
   protected readonly services = toSignal(this.floorService.getServices(), { initialValue: [] as DiningService[] });
@@ -163,7 +169,8 @@ export class FloorPlanComponent {
   protected onTableClick(table: TableState): void {
     switch (table.status) {
       case TableStatus.Free:
-        this.snackBar.open('Créer une réservation pour cette table — fonctionnalité à venir', 'Fermer', { duration: 3000 });
+        this.drawerTable.set(table);
+        this.drawerOpen.set(true);
         break;
       case TableStatus.Pending:
       case TableStatus.Confirmed:
@@ -174,6 +181,23 @@ export class FloorPlanComponent {
         break;
       default:
         this.snackBar.open(`Table ${table.number} — ${table.status}`, 'Fermer', { duration: 2000 });
+    }
+  }
+
+  protected onDrawerClose(): void {
+    this.drawerOpen.set(false);
+    this.drawerTable.set(null);
+  }
+
+  protected onBookingCreated(): void {
+    this.drawerOpen.set(false);
+    this.drawerTable.set(null);
+    // Recharge le snapshot pour afficher la nouvelle réservation
+    const date = this.selectedDate();
+    const serviceId = this.selectedServiceId();
+    if (serviceId) {
+      this.snapshot.set(null);
+      this.floorService.getSnapshot(date, serviceId).subscribe(snap => this.snapshot.set(snap));
     }
   }
 

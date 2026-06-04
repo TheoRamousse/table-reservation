@@ -264,6 +264,8 @@
               Réservation en cours…
             } @else {
               Réserver
+            }
+            @if (!isSubmitting()) {
               <mat-icon matIconSuffix>arrow_forward</mat-icon>
             }
           </button>

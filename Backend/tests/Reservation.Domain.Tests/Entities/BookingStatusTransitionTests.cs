@@ -19,7 +19,7 @@ public class BookingStatusTransitionTests
         var booking = Builders.PendingBooking();
 
         // Act
-        booking.TransitionTo(BookingStatus.Confirmed, UserRole.Staff, _now);
+        booking.TransitionTo(BookingStatus.Confirmed, _now);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.Confirmed);
@@ -32,7 +32,7 @@ public class BookingStatusTransitionTests
         var booking = Builders.ConfirmedBooking();
 
         // Act
-        booking.TransitionTo(BookingStatus.Seated, UserRole.Staff, _now);
+        booking.TransitionTo(BookingStatus.Seated, _now);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.Seated);
@@ -45,7 +45,7 @@ public class BookingStatusTransitionTests
         var booking = Builders.SeatedBooking();
 
         // Act
-        booking.TransitionTo(BookingStatus.Completed, UserRole.Staff, _now);
+        booking.TransitionTo(BookingStatus.Completed, _now);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.Completed);
@@ -58,7 +58,7 @@ public class BookingStatusTransitionTests
         var booking = Builders.PendingBooking();
 
         // Act
-        booking.TransitionTo(BookingStatus.Rejected, UserRole.Staff, _now);
+        booking.TransitionTo(BookingStatus.Rejected, _now);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.Rejected);
@@ -77,7 +77,7 @@ public class BookingStatusTransitionTests
             arrivalTime: arrivalTime);
 
         // Act
-        Action act = () => booking.TransitionTo(BookingStatus.NoShow, UserRole.Staff, nowBeforeThreshold);
+        Action act = () => booking.TransitionTo(BookingStatus.NoShow, nowBeforeThreshold);
 
         // Assert
         act.Should().Throw<NoShowTooEarlyException>("le no-show requiert ArrivalTime + 15 min (RB-008)");
@@ -94,7 +94,7 @@ public class BookingStatusTransitionTests
             arrivalTime: arrivalTime);
 
         // Act
-        booking.TransitionTo(BookingStatus.NoShow, UserRole.Staff, nowAtThreshold);
+        booking.TransitionTo(BookingStatus.NoShow, nowAtThreshold);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.NoShow);
@@ -114,7 +114,7 @@ public class BookingStatusTransitionTests
         var booking = Builders.BookingInStatus(from);
 
         // Act
-        Action act = () => booking.TransitionTo(to, UserRole.Staff, _now);
+        Action act = () => booking.TransitionTo(to, _now);
 
         // Assert
         act.Should().Throw<InvalidStatusTransitionException>(

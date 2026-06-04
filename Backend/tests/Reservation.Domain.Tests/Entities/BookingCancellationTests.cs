@@ -20,7 +20,7 @@ public class BookingCancellationTests
         var booking = Builders.ConfirmedBooking(bookingDate: bookingDate, arrivalTime: arrivalTime);
 
         // Act
-        booking.Cancel("Indisponible", now, UserRole.Online);
+        booking.Cancel("Indisponible", now);
 
         // Assert
         booking.LateCancel.Should().BeTrue("annulation < 24h avant l'arrivée = LateCancel (RB-009)");
@@ -36,7 +36,7 @@ public class BookingCancellationTests
         var booking = Builders.ConfirmedBooking(bookingDate: bookingDate, arrivalTime: arrivalTime);
 
         // Act
-        booking.Cancel("Indisponible", now, UserRole.Online);
+        booking.Cancel("Indisponible", now);
 
         // Assert
         booking.LateCancel.Should().BeFalse("annulation > 24h avant l'arrivée n'est pas un LateCancel");
@@ -49,7 +49,7 @@ public class BookingCancellationTests
         var booking = Builders.PendingBooking();
 
         // Act
-        booking.Cancel("Client indisponible", DateTimeOffset.UtcNow, UserRole.Online);
+        booking.Cancel("Client indisponible", DateTimeOffset.UtcNow);
 
         // Assert
         booking.Status.Should().Be(BookingStatus.Cancelled);
@@ -63,7 +63,7 @@ public class BookingCancellationTests
         const string reason = "Déménagement imprévu";
 
         // Act
-        booking.Cancel(reason, DateTimeOffset.UtcNow, UserRole.Online);
+        booking.Cancel(reason, DateTimeOffset.UtcNow);
 
         // Assert
         booking.CancellationReason.Should().Be(reason);
@@ -78,7 +78,7 @@ public class BookingCancellationTests
         var booking = Builders.SeatedBooking();
 
         // Act
-        Action act = () => booking.Cancel("Urgence", DateTimeOffset.UtcNow, UserRole.Manager);
+        Action act = () => booking.Cancel("Urgence", DateTimeOffset.UtcNow);
 
         // Assert
         act.Should().Throw<CannotCancelSeatedException>("impossible d'annuler une réservation Seated (RB-009)");
@@ -91,7 +91,7 @@ public class BookingCancellationTests
         var booking = Builders.PendingBooking();
 
         // Act
-        Action act = () => booking.Cancel(string.Empty, DateTimeOffset.UtcNow, UserRole.Online);
+        Action act = () => booking.Cancel(string.Empty, DateTimeOffset.UtcNow);
 
         // Assert
         act.Should().Throw<ArgumentException>("CancellationReason est obligatoire");

@@ -130,18 +130,9 @@ public sealed class Booking
         }
 
         // FR-23 : détection automatique des flags informatifs
-        var hasAllergyAlert = specialRequests is not null &&
-            (specialRequests.Contains("allergie",    StringComparison.InvariantCultureIgnoreCase) ||
-             specialRequests.Contains("intolérance", StringComparison.InvariantCultureIgnoreCase));
-
-        var isCelebration = specialRequests is not null &&
-            (specialRequests.Contains("anniversaire", StringComparison.InvariantCultureIgnoreCase) ||
-             specialRequests.Contains("mariage",      StringComparison.InvariantCultureIgnoreCase) ||
-             specialRequests.Contains("fiançailles",  StringComparison.InvariantCultureIgnoreCase));
-
-        var needsHighChair = specialRequests is not null &&
-            (specialRequests.Contains("chaise bébé",  StringComparison.InvariantCultureIgnoreCase) ||
-             specialRequests.Contains("siège enfant", StringComparison.InvariantCultureIgnoreCase));
+        var hasAllergyAlert = ContainsAny(specialRequests, "allergie", "intolérance");
+        var isCelebration   = ContainsAny(specialRequests, "anniversaire", "mariage", "fiançailles");
+        var needsHighChair  = ContainsAny(specialRequests, "chaise bébé", "siège enfant");
 
         return new Booking(
             id: Guid.NewGuid(),
@@ -163,7 +154,7 @@ public sealed class Booking
     }
 
     // FR-12 : transitions de statut autorisées (RB-014)
-    public void TransitionTo(BookingStatus newStatus, UserRole actorRole, DateTimeOffset now)
+    public void TransitionTo(BookingStatus newStatus, DateTimeOffset now)
     {
         var isAllowed = (Status, newStatus) switch
         {
@@ -191,7 +182,7 @@ public sealed class Booking
     }
 
     // FR-11 : annulation avec gestion du LateCancel (RB-009)
-    public void Cancel(string reason, DateTimeOffset now, UserRole actorRole)
+    public void Cancel(string reason, DateTimeOffset now)
     {
         if (Status == BookingStatus.Seated)
             throw new CannotCancelSeatedException(Status);
@@ -215,6 +206,9 @@ public sealed class Booking
         var start = new DateTimeOffset(BookingDate.ToDateTime(ArrivalTime), TimeSpan.Zero);
         return new TimeSlot(start, start.AddMinutes(service.DurationMinutes));
     }
+
+    private static bool ContainsAny(string? text, params string[] keywords) =>
+        text is not null && keywords.Any(k => text.Contains(k, StringComparison.InvariantCultureIgnoreCase));
 
     private static int GetMaxHorizonDays(BookingSource source, VipLevel vipLevel)
     {

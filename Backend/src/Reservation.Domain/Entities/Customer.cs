@@ -12,12 +12,13 @@ public sealed class Customer
     public string? Email { get; private set; }
     public bool IsBlacklisted { get; private set; }
     public int NoShowCount { get; private set; }
+    public int LateCancelCount { get; private set; }
     public VipLevel VipLevel { get; private set; }
 
     private Customer() { }
 
     internal Customer(Guid id, string firstName, string lastName, string phone,
-        string? email, bool isBlacklisted, int noShowCount, VipLevel vipLevel)
+        string? email, bool isBlacklisted, int noShowCount, int lateCancelCount, VipLevel vipLevel)
     {
         Id = id;
         FirstName = firstName;
@@ -26,10 +27,9 @@ public sealed class Customer
         Email = email;
         IsBlacklisted = isBlacklisted;
         NoShowCount = noShowCount;
+        LateCancelCount = lateCancelCount;
         VipLevel = vipLevel;
     }
-
-    private int _lateCancelCount;
 
     public static Customer Create(string firstName, string lastName, string phone, string? email = null)
     {
@@ -38,7 +38,7 @@ public sealed class Customer
         ArgumentException.ThrowIfNullOrWhiteSpace(phone);
 
         return new Customer(Guid.NewGuid(), firstName, lastName, phone, email,
-            isBlacklisted: false, noShowCount: 0, vipLevel: VipLevel.None);
+            isBlacklisted: false, noShowCount: 0, lateCancelCount: 0, vipLevel: VipLevel.None);
     }
 
     public void RegisterNoShow()
@@ -50,8 +50,8 @@ public sealed class Customer
 
     public void RegisterLateCancel()
     {
-        _lateCancelCount++;
-        if (_lateCancelCount >= 2)
+        LateCancelCount++;
+        if (LateCancelCount >= 2)
             VipLevel = VipLevel.None;
     }
 

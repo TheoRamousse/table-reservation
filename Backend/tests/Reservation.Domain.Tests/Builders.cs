@@ -12,12 +12,13 @@ internal static class Builders
     internal static Customer Customer(
         bool isBlacklisted = false,
         int noShowCount = 0,
+        int lateCancelCount = 0,
         VipLevel vipLevel = VipLevel.None,
         string firstName = "Jean",
         string lastName = "Dupont",
         string phone = "0600000000",
         string? email = null) =>
-        new(Guid.NewGuid(), firstName, lastName, phone, email, isBlacklisted, noShowCount, vipLevel);
+        new(Guid.NewGuid(), firstName, lastName, phone, email, isBlacklisted, noShowCount, lateCancelCount, vipLevel);
 
     internal static Table Table(
         int capacity = 6,

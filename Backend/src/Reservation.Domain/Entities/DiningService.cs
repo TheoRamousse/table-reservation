@@ -31,6 +31,8 @@ public sealed class DiningService
     {
         if (endTime <= startTime)
             throw new ArgumentException("L'heure de fin doit être après l'heure de début.");
+        if (lastBookingTime < startTime)
+            throw new ArgumentException("L'heure limite de réservation ne peut pas être avant l'heure de début.");
         if (lastBookingTime > endTime)
             throw new ArgumentException("L'heure limite de réservation ne peut pas dépasser l'heure de fin.");
         if (durationMinutes <= 0)

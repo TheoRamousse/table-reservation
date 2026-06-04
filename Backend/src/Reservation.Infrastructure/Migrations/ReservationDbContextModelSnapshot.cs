@@ -112,6 +112,40 @@ namespace Reservation.Infrastructure.Migrations
                     b.ToTable("bookings", (string)null);
                 });
 
+            modelBuilder.Entity("Reservation.Domain.Entities.ClosedDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("ClosedDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("closed_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClosedDate")
+                        .IsUnique()
+                        .HasDatabaseName("idx_closed_days_date");
+
+                    b.ToTable("closed_days", (string)null);
+                });
+
             modelBuilder.Entity("Reservation.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -277,6 +311,41 @@ namespace Reservation.Infrastructure.Migrations
                         .HasDatabaseName("idx_tables_number");
 
                     b.ToTable("tables", (string)null);
+                });
+
+            modelBuilder.Entity("Reservation.Domain.Entities.TableLock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PrimaryTableId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("primary_table_id");
+
+                    b.Property<Guid>("SecondaryTableId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("secondary_table_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .HasDatabaseName("idx_table_locks_booking");
+
+                    b.ToTable("table_locks", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -37,6 +37,7 @@ export interface Booking {
 
 export interface CreateBookingCommand {
   tableId: string | null;
+  secondaryTableId?: string;
   customerId: string;
   serviceId: string;
   bookingDate: string;

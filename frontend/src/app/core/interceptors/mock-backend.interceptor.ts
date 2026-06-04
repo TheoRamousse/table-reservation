@@ -46,6 +46,23 @@ const MOCK_SNAPSHOT: FloorSnapshot = {
   ],
 };
 
+const MOCK_CLOSED_DAYS: Array<{ id: string; date: string; reason: string }> = [];
+
+const MOCK_TABLES: Array<{ id: string; number: number; capacity: number; minCapacity: number; zone: string; isActive: boolean; isCombinable: boolean }> = [
+  { id: 't1', number: 1, capacity: 2, minCapacity: 1, zone: 'Salle', isActive: true, isCombinable: false },
+  { id: 't2', number: 2, capacity: 4, minCapacity: 2, zone: 'Salle', isActive: true, isCombinable: true },
+  { id: 't3', number: 3, capacity: 6, minCapacity: 2, zone: 'Salle', isActive: true, isCombinable: false },
+  { id: 't4', number: 4, capacity: 4, minCapacity: 2, zone: 'Salle', isActive: true, isCombinable: true },
+  { id: 't5', number: 5, capacity: 2, minCapacity: 1, zone: 'Salle', isActive: true, isCombinable: false },
+  { id: 't6', number: 6, capacity: 8, minCapacity: 4, zone: 'Salle', isActive: true, isCombinable: true },
+  { id: 't7', number: 7, capacity: 4, minCapacity: 2, zone: 'Terrasse', isActive: true, isCombinable: false },
+  { id: 't8', number: 8, capacity: 4, minCapacity: 2, zone: 'Terrasse', isActive: true, isCombinable: true },
+  { id: 't9', number: 9, capacity: 2, minCapacity: 1, zone: 'Terrasse', isActive: true, isCombinable: false },
+  { id: 't10', number: 10, capacity: 6, minCapacity: 3, zone: 'Terrasse', isActive: true, isCombinable: true },
+  { id: 't11', number: 11, capacity: 4, minCapacity: 2, zone: 'Bar', isActive: true, isCombinable: false },
+  { id: 't12', number: 12, capacity: 2, minCapacity: 1, zone: 'Bar', isActive: true, isCombinable: false },
+];
+
 const MOCK_CUSTOMERS: Customer[] = [
   { id: 'c1', firstName: 'Jean', lastName: 'Dupont', phone: '0601020304', email: 'jean.dupont@example.com', isBlacklisted: false, noShowCount: 0, vipLevel: VipLevel.None },
   { id: 'c2', firstName: 'Sophie', lastName: 'Martin', phone: '0605060708', email: 'sophie.martin@example.com', isBlacklisted: false, noShowCount: 1, vipLevel: VipLevel.Regular },
@@ -88,6 +105,40 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(new HttpResponse({ status: 200, body: { status: body.newStatus } }));
   }
 
+  // GET /api/tables (liste complète — exclut /availability)
+  if (req.method === 'GET' && req.url.endsWith('/api/tables')) {
+    const allTables = MOCK_TABLES.map(t => ({ ...t }));
+    return of(new HttpResponse({ status: 200, body: allTables }));
+  }
+
+  // POST /api/tables
+  if (req.method === 'POST' && req.url.endsWith('/api/tables')) {
+    const body = req.body as any;
+    const newTable = {
+      id: `t-${Math.random().toString(36).slice(2, 8)}`,
+      number: body.number,
+      capacity: body.capacity,
+      minCapacity: body.minCapacity,
+      zone: body.zone,
+      isActive: body.isActive ?? true,
+      isCombinable: body.isCombinable ?? false,
+    };
+    MOCK_TABLES.push(newTable);
+    return of(new HttpResponse({ status: 201, body: newTable }));
+  }
+
+  // PUT /api/tables/:id
+  if (req.method === 'PUT' && req.url.match(/\/api\/tables\/[^/]+$/)) {
+    const id = req.url.split('/').pop()!;
+    const body = req.body as any;
+    const idx = MOCK_TABLES.findIndex(t => t.id === id);
+    if (idx === -1) {
+      return throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }));
+    }
+    MOCK_TABLES[idx] = { ...MOCK_TABLES[idx], ...body, id };
+    return of(new HttpResponse({ status: 200, body: { ...MOCK_TABLES[idx] } }));
+  }
+
   // GET /api/tables/availability
   if (req.method === 'GET' && req.url.includes('/api/tables/availability')) {
     const params = new URL(req.urlWithParams, 'http://localhost').searchParams;
@@ -100,6 +151,35 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       .map(({ id, number, capacity, minCapacity, zone: z, isCombinable }) => ({ id, number, capacity, minCapacity, zone: z, isCombinable }))
       .sort((a, b) => a.capacity - b.capacity);
     return of(new HttpResponse({ status: 200, body: { tables, reason: null } }));
+  }
+
+  // GET /api/closed-days
+  if (req.method === 'GET' && req.url.endsWith('/api/closed-days')) {
+    return of(new HttpResponse({ status: 200, body: MOCK_CLOSED_DAYS }));
+  }
+
+  // POST /api/closed-days
+  if (req.method === 'POST' && req.url.endsWith('/api/closed-days')) {
+    const body = req.body as { date: string; reason: string };
+    const closedDay = {
+      id: `cd-${Math.random().toString(36).slice(2, 8)}`,
+      date: body.date,
+      reason: body.reason,
+    };
+    MOCK_CLOSED_DAYS.push(closedDay);
+    return of(new HttpResponse({ status: 201, body: { closedDay, cancelledBookingsCount: 2 } }));
+  }
+
+  // PATCH /api/customers/:id/blacklist
+  if (req.method === 'PATCH' && req.url.match(/\/api\/customers\/[^/]+\/blacklist/)) {
+    const id = req.url.split('/').slice(-2)[0];
+    const body = req.body as { isBlacklisted: boolean } | null;
+    const customer = MOCK_CUSTOMERS.find(c => c.id === id);
+    if (!customer) {
+      return throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }));
+    }
+    customer.isBlacklisted = body?.isBlacklisted ?? customer.isBlacklisted;
+    return of(new HttpResponse({ status: 200, body: { ...customer } }));
   }
 
   // GET /api/customers (search — exclut /api/customers/{id}/...)
@@ -127,6 +207,38 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       vipLevel: VipLevel.None,
     };
     return of(new HttpResponse({ status: 201, body: created }));
+  }
+
+  // DELETE /api/bookings/:id
+  if (req.method === 'DELETE' && req.url.match(/\/api\/bookings\/[^/]+$/) && !req.url.includes('/table-lock')) {
+    const id = req.url.split('/').pop()!;
+    const body = req.body as { cancellationReason?: string } | null;
+    return of(new HttpResponse({
+      status: 200,
+      body: {
+        id,
+        status: 'Cancelled',
+        cancellationReason: body?.cancellationReason ?? null,
+      },
+    }));
+  }
+
+  // PUT /api/bookings/:id
+  if (req.method === 'PUT' && req.url.match(/\/api\/bookings\/[^/]+$/)) {
+    const id = req.url.split('/').pop()!;
+    const body = req.body as { status?: string } | null;
+    return of(new HttpResponse({
+      status: 200,
+      body: {
+        id,
+        status: body?.status ?? 'Pending',
+      },
+    }));
+  }
+
+  // DELETE /api/bookings/:id/table-lock
+  if (req.method === 'DELETE' && req.url.match(/\/api\/bookings\/[^/]+\/table-lock/)) {
+    return of(new HttpResponse({ status: 204, body: null }));
   }
 
   // POST /api/bookings

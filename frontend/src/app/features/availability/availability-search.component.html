@@ -3,17 +3,26 @@
   <!-- Hero / Formulaire de recherche -->
   <div class="bg-white border-b shadow-sm">
     <div class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      <h1 class="flex items-center gap-2 text-2xl font-bold text-gray-800 mb-6">
-        <mat-icon class="text-gray-500" aria-hidden="true">restaurant</mat-icon>
-        Réserver une table
-      </h1>
+      <div class="flex items-start justify-between mb-6">
+        <h1 class="flex items-center gap-2 text-2xl font-bold text-gray-800">
+          <mat-icon class="text-gray-500" aria-hidden="true">restaurant</mat-icon>
+          Réserver une table
+        </h1>
+        <a mat-stroked-button routerLink="/login" class="shrink-0">
+          <mat-icon>login</mat-icon>
+          Connexion
+        </a>
+      </div>
 
       <form [formGroup]="searchForm" (ngSubmit)="onSearch()"
             class="flex flex-col sm:flex-row flex-wrap gap-3 items-start">
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-36">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-44">
           <mat-label>Date</mat-label>
-          <input matInput type="date" formControlName="date" [min]="today" aria-required="true" />
+          <input matInput [matDatepicker]="datePicker" formControlName="date"
+                 [min]="minDate" aria-required="true" readonly />
+          <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+          <mat-datepicker #datePicker />
           <mat-error>Choisissez une date à partir d'aujourd'hui</mat-error>
         </mat-form-field>
 

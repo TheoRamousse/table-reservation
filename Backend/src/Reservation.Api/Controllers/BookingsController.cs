@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.Bookings.Commands;
@@ -9,6 +10,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/bookings")]
+[Authorize]
 public sealed class BookingsController(IMediator mediator) : ControllerBase
 {
     // POST /api/bookings
@@ -49,6 +51,7 @@ public sealed class BookingsController(IMediator mediator) : ControllerBase
     }
 
     // PATCH /api/bookings/{id}/status
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpPatch("{id:guid}/status")]
     [ProducesResponseType<BookingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,5 +74,30 @@ public sealed class BookingsController(IMediator mediator) : ControllerBase
     {
         var dto = await mediator.Send(new CancelBookingCommand(id, request.CancellationReason), ct);
         return Ok(dto);
+    }
+
+    // PUT /api/bookings/{id}
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType<BookingDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<BookingDto>> Modify(
+        Guid id, [FromBody] ModifyBookingRequest request, CancellationToken ct)
+    {
+        var dto = await mediator.Send(
+            new ModifyBookingCommand(id, request.BookingDate, request.ArrivalTime,
+                request.GuestsCount, request.SpecialRequests, request.TableId), ct);
+        return Ok(dto);
+    }
+
+    // DELETE /api/bookings/{id}/table-lock
+    [Authorize(Roles = "Staff,Manager,Admin")]
+    [HttpDelete("{id:guid}/table-lock")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> SeparateTableLock(Guid id, CancellationToken ct)
+    {
+        await mediator.Send(new SeparateTableLockCommand(id), ct);
+        return NoContent();
     }
 }

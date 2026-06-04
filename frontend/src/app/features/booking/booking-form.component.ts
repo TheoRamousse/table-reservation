@@ -22,8 +22,9 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs/operators';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -31,16 +32,19 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FloorService } from '../../core/services/floor.service';
+import { AvailabilityService } from '../../core/services/availability.service';
 import { BookingService } from '../../core/services/booking.service';
 import { DiningService } from '../../core/models/dining-service.model';
 import { Booking, BookingSource } from '../../core/models/booking.model';
 import { Customer } from '../../core/models/customer.model';
+import { AvailableTable } from '../../core/models/table.model';
 
 interface SelectedTable {
   id: string;
   number: number;
   zone: string;
   capacity: number;
+  isCombinable?: boolean;
 }
 
 interface RouterState {
@@ -89,6 +93,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -101,6 +106,7 @@ export class BookingFormComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly floorService = inject(FloorService);
+  private readonly availabilityService = inject(AvailabilityService);
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -110,6 +116,7 @@ export class BookingFormComponent {
   readonly prefilledTableNumber = input<number | null>(null);
   readonly prefilledTableZone = input<string | null>(null);
   readonly prefilledTableCapacity = input<number | null>(null);
+  readonly prefilledTableIsCombinable = input<boolean | null>(null);
   readonly prefilledDate = input<string | null>(null);
   readonly prefilledServiceId = input<string | null>(null);
   readonly prefilledGuestsCount = input<number | null>(null);
@@ -125,7 +132,7 @@ export class BookingFormComponent {
   });
   protected readonly isOnline = computed(() => this.auth.role() === 'Online');
 
-  protected readonly today = format(new Date(), 'yyyy-MM-dd');
+  protected readonly minDate = new Date();
 
   protected readonly services = toSignal(
     this.floorService.getServices(),
@@ -138,7 +145,7 @@ export class BookingFormComponent {
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.email]],
     phone: ['', [Validators.pattern(/^0[0-9]{9}$/)]],
-    date: [this.today, [Validators.required, this.dateNotInPast.bind(this)]],
+    date: [new Date() as Date | null, [Validators.required, this.dateNotInPast.bind(this)]],
     serviceId: ['', Validators.required],
     arrivalTime: ['', Validators.required],
     guestsCount: [2, [Validators.required, Validators.min(1), Validators.max(30)]],
@@ -152,6 +159,10 @@ export class BookingFormComponent {
 
   // Table sélectionnée
   protected readonly selectedTable = signal<SelectedTable | null>(null);
+
+  // Table secondaire (fusion)
+  protected readonly secondaryTableId = signal<string | null>(null);
+  protected readonly combinableTables = signal<AvailableTable[]>([]);
 
   // État
   protected readonly apiError = signal<string | null>(null);
@@ -196,6 +207,27 @@ export class BookingFormComponent {
     return b ? (this.services().find(s => s.id === b.serviceId)?.name ?? '') : '';
   });
 
+  protected readonly showFusionSection = computed(
+    () => this.selectedTable()?.isCombinable === true,
+  );
+
+  protected readonly selectedSecondaryTable = computed(() => {
+    const id = this.secondaryTableId();
+    if (!id) return null;
+    return this.combinableTables().find(t => t.id === id) ?? null;
+  });
+
+  protected readonly combinedCapacity = computed(() => {
+    const primary = this.selectedTable();
+    const secondary = this.selectedSecondaryTable();
+    if (!primary || !secondary) return null;
+    return primary.capacity + secondary.capacity;
+  });
+
+  protected readonly combinableTablesForSelect = computed(() =>
+    this.combinableTables().filter(t => t.id !== this.selectedTable()?.id),
+  );
+
   constructor() {
     // Pré-remplissage depuis l'état de navigation (mode page)
     const state = this.router.lastSuccessfulNavigation?.extras.state as RouterState | undefined;
@@ -207,7 +239,7 @@ export class BookingFormComponent {
         capacity: state.tableCapacity ?? 0,
       });
     }
-    if (state?.date) this.form.get('date')?.setValue(state.date, { emitEvent: false });
+    if (state?.date) this.form.get('date')?.setValue(parse(state.date, 'yyyy-MM-dd', new Date()), { emitEvent: false });
     if (state?.serviceId) this.form.get('serviceId')?.setValue(state.serviceId, { emitEvent: false });
     if (state?.guestsCount) this.form.get('guestsCount')?.setValue(state.guestsCount, { emitEvent: false });
 
@@ -220,16 +252,18 @@ export class BookingFormComponent {
           number: this.prefilledTableNumber() ?? 0,
           zone: this.prefilledTableZone() ?? '',
           capacity: this.prefilledTableCapacity() ?? 0,
+          isCombinable: this.prefilledTableIsCombinable() ?? false,
         }));
       }
     });
     effect(() => {
       const d = this.prefilledDate();
-      if (d) untracked(() => this.form.get('date')?.setValue(d, { emitEvent: false }));
+      if (d) untracked(() => this.form.get('date')?.setValue(parse(d, 'yyyy-MM-dd', new Date()), { emitEvent: false }));
     });
     effect(() => {
+      // emitEvent: true (défaut) pour que valueChanges émette et mette à jour timeSlots()
       const s = this.prefilledServiceId();
-      if (s) untracked(() => this.form.get('serviceId')?.setValue(s, { emitEvent: false }));
+      if (s) untracked(() => this.form.get('serviceId')?.setValue(s));
     });
     effect(() => {
       const g = this.prefilledGuestsCount();
@@ -242,6 +276,29 @@ export class BookingFormComponent {
       if (svcs.length > 0 && !this.form.get('serviceId')?.value) {
         untracked(() => this.form.get('serviceId')?.setValue(svcs[0].id));
       }
+    });
+
+    // Charge les tables combinables quand la table principale est combinable
+    effect(() => {
+      const table = this.selectedTable();
+      const serviceId = this.serviceId$();
+      const dateVal = this.form.get('date')?.value as Date | null;
+      if (!table?.isCombinable || !serviceId || !dateVal) {
+        untracked(() => {
+          this.combinableTables.set([]);
+          this.secondaryTableId.set(null);
+        });
+        return;
+      }
+      const date = format(dateVal, 'yyyy-MM-dd');
+      const guestsCount = this.form.get('guestsCount')?.value ?? 1;
+      this.availabilityService
+        .search(date, serviceId, guestsCount as number)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(res => {
+          const others = res.tables.filter(t => t.isCombinable && t.id !== table.id);
+          untracked(() => this.combinableTables.set(others));
+        });
     });
 
     // Recherche client avec debounce (Staff)
@@ -296,13 +353,17 @@ export class BookingFormComponent {
           phone: v.phone || undefined,
         });
 
+    const dateValue = v.date as unknown as Date | null;
+    const bookingDate = dateValue ? format(dateValue, 'yyyy-MM-dd') : '';
+
     customer$.pipe(
       switchMap(customer =>
         this.bookingService.createBooking({
           tableId: this.selectedTable()?.id ?? null,
+          secondaryTableId: this.secondaryTableId() ?? undefined,
           customerId: customer.id,
           serviceId: v.serviceId!,
-          bookingDate: v.date!,
+          bookingDate,
           arrivalTime: v.arrivalTime!,
           guestsCount: v.guestsCount!,
           specialRequests: v.specialRequests || undefined,
@@ -325,6 +386,10 @@ export class BookingFormComponent {
     });
   }
 
+  protected onSecondaryTableChange(tableId: string | null): void {
+    this.secondaryTableId.set(tableId || null);
+  }
+
   protected clearCustomer(): void {
     this.foundCustomer.set(null);
     this.customerSearchCtrl.setValue('');
@@ -341,9 +406,11 @@ export class BookingFormComponent {
   protected onNewBooking(): void {
     this.successBooking.set(null);
     this.selectedTable.set(null);
+    this.secondaryTableId.set(null);
+    this.combinableTables.set([]);
     this.foundCustomer.set(null);
     this.customerSearchCtrl.setValue('');
-    this.form.reset({ date: this.today, guestsCount: 2 });
+    this.form.reset({ date: new Date(), guestsCount: 2 });
   }
 
   protected onBackToFloor(): void { this.closed.emit(); }
@@ -351,6 +418,9 @@ export class BookingFormComponent {
 
   private dateNotInPast(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
-    return control.value < format(new Date(), 'yyyy-MM-dd') ? { dateInPast: true } : null;
+    const date = control.value as Date;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today ? { dateInPast: true } : null;
   }
 }

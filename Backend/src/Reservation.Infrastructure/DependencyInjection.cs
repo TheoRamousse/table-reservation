@@ -7,6 +7,7 @@ using Reservation.Infrastructure.Clock;
 using Reservation.Infrastructure.Persistence;
 using Reservation.Infrastructure.Persistence.Interceptors;
 using Reservation.Infrastructure.Persistence.Repositories;
+using Reservation.Infrastructure.Services;
 
 namespace Reservation.Infrastructure;
 
@@ -28,6 +29,10 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<IDiningServiceRepository, DiningServiceRepository>();
+        services.AddScoped<IClosedDayRepository, ClosedDayRepository>();
+        services.AddScoped<ITableLockRepository, TableLockRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         return services;
     }

@@ -8,7 +8,7 @@ namespace Reservation.Infrastructure.Persistence.Repositories;
 public sealed class BookingRepository(ReservationDbContext db) : IBookingRepository
 {
     public async Task<Booking?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await db.Bookings.FindAsync([id], ct);
+        => await db.Bookings.FirstOrDefaultAsync(b => b.Id == id, ct);
 
     public async Task AddAsync(Booking booking, CancellationToken ct = default)
         => await db.Bookings.AddAsync(booking, ct);
@@ -37,6 +37,17 @@ public sealed class BookingRepository(ReservationDbContext db) : IBookingReposit
         => await db.Bookings
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.BookingDate)
+            .ToListAsync(ct);
+
+    public async Task<IEnumerable<Booking>> GetByDateAndServiceAsync(DateOnly date, Guid serviceId, CancellationToken ct = default)
+        => await db.Bookings
+            .Where(b => b.BookingDate == date && b.ServiceId == serviceId)
+            .ToListAsync(ct);
+
+    public async Task<IEnumerable<Booking>> GetPendingAndConfirmedByDateAsync(DateOnly date, CancellationToken ct = default)
+        => await db.Bookings
+            .Where(b => b.BookingDate == date
+                     && (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
             .ToListAsync(ct);
 
     public async Task SaveChangesAsync(CancellationToken ct = default)

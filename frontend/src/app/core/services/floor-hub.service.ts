@@ -32,8 +32,6 @@ export class FloorHubService implements OnDestroy {
 
   private connectTimeout: ReturnType<typeof setTimeout> | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-  private simulationTimer: ReturnType<typeof setInterval> | null = null;
-  private simulationIndex = 0;
 
   connect(date: string, serviceId: string): void {
     this.disconnect();
@@ -46,7 +44,6 @@ export class FloorHubService implements OnDestroy {
     this.connectTimeout = setTimeout(() => {
       if (this._currentGroup === group) {
         this.connectionState.set('connected');
-        this.startSimulation();
       }
     }, 100);
   }
@@ -60,7 +57,6 @@ export class FloorHubService implements OnDestroy {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
-    this.stopSimulation();
     this.connectionState.set('disconnected');
     this._currentGroup = null;
   }
@@ -89,24 +85,5 @@ export class FloorHubService implements OnDestroy {
     this.disconnect();
     this.tableStatusSubject.complete();
     this.serviceCapacitySubject.complete();
-  }
-
-  private startSimulation(): void {
-    const tableIds = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9', 't10', 't11', 't12'];
-    const statuses: TableStatus[] = [TableStatus.Free, TableStatus.Pending, TableStatus.Confirmed, TableStatus.Seated];
-
-    this.simulationTimer = setInterval(() => {
-      const tableId = tableIds[this.simulationIndex % tableIds.length];
-      const newStatus = statuses[this.simulationIndex % statuses.length];
-      this.emitTableStatusChanged({ tableId, newStatus });
-      this.simulationIndex++;
-    }, 8_000);
-  }
-
-  private stopSimulation(): void {
-    if (this.simulationTimer) {
-      clearInterval(this.simulationTimer);
-      this.simulationTimer = null;
-    }
   }
 }

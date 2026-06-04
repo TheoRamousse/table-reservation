@@ -25,6 +25,24 @@ public sealed class Table
         IsActive = isActive;
     }
 
+    public void Update(int capacity, int minCapacity, TableZone zone, bool isCombinable, bool isActive)
+    {
+        if (capacity <= 0)
+            throw new ArgumentException("La capacité doit être supérieure à zéro.", nameof(capacity));
+        if (minCapacity <= 0)
+            throw new ArgumentException("La capacité minimale doit être supérieure à zéro.", nameof(minCapacity));
+        if (minCapacity > capacity)
+            throw new ArgumentException(
+                $"La capacité minimale ({minCapacity}) ne peut pas dépasser la capacité totale ({capacity}).",
+                nameof(minCapacity));
+
+        Capacity    = capacity;
+        MinCapacity = minCapacity;
+        Zone        = zone;
+        IsCombinable = isCombinable;
+        IsActive    = isActive;
+    }
+
     public static Table Create(int number, int capacity, int minCapacity, TableZone zone, bool isCombinable = false)
     {
         if (capacity <= 0)

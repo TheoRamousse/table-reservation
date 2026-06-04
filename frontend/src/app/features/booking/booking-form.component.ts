@@ -32,16 +32,19 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { FloorService } from '../../core/services/floor.service';
+import { AvailabilityService } from '../../core/services/availability.service';
 import { BookingService } from '../../core/services/booking.service';
 import { DiningService } from '../../core/models/dining-service.model';
 import { Booking, BookingSource } from '../../core/models/booking.model';
 import { Customer } from '../../core/models/customer.model';
+import { AvailableTable } from '../../core/models/table.model';
 
 interface SelectedTable {
   id: string;
   number: number;
   zone: string;
   capacity: number;
+  isCombinable?: boolean;
 }
 
 interface RouterState {
@@ -103,6 +106,7 @@ export class BookingFormComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly floorService = inject(FloorService);
+  private readonly availabilityService = inject(AvailabilityService);
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -112,6 +116,7 @@ export class BookingFormComponent {
   readonly prefilledTableNumber = input<number | null>(null);
   readonly prefilledTableZone = input<string | null>(null);
   readonly prefilledTableCapacity = input<number | null>(null);
+  readonly prefilledTableIsCombinable = input<boolean | null>(null);
   readonly prefilledDate = input<string | null>(null);
   readonly prefilledServiceId = input<string | null>(null);
   readonly prefilledGuestsCount = input<number | null>(null);
@@ -154,6 +159,10 @@ export class BookingFormComponent {
 
   // Table sélectionnée
   protected readonly selectedTable = signal<SelectedTable | null>(null);
+
+  // Table secondaire (fusion)
+  protected readonly secondaryTableId = signal<string | null>(null);
+  protected readonly combinableTables = signal<AvailableTable[]>([]);
 
   // État
   protected readonly apiError = signal<string | null>(null);
@@ -198,6 +207,27 @@ export class BookingFormComponent {
     return b ? (this.services().find(s => s.id === b.serviceId)?.name ?? '') : '';
   });
 
+  protected readonly showFusionSection = computed(
+    () => this.selectedTable()?.isCombinable === true,
+  );
+
+  protected readonly selectedSecondaryTable = computed(() => {
+    const id = this.secondaryTableId();
+    if (!id) return null;
+    return this.combinableTables().find(t => t.id === id) ?? null;
+  });
+
+  protected readonly combinedCapacity = computed(() => {
+    const primary = this.selectedTable();
+    const secondary = this.selectedSecondaryTable();
+    if (!primary || !secondary) return null;
+    return primary.capacity + secondary.capacity;
+  });
+
+  protected readonly combinableTablesForSelect = computed(() =>
+    this.combinableTables().filter(t => t.id !== this.selectedTable()?.id),
+  );
+
   constructor() {
     // Pré-remplissage depuis l'état de navigation (mode page)
     const state = this.router.lastSuccessfulNavigation?.extras.state as RouterState | undefined;
@@ -222,6 +252,7 @@ export class BookingFormComponent {
           number: this.prefilledTableNumber() ?? 0,
           zone: this.prefilledTableZone() ?? '',
           capacity: this.prefilledTableCapacity() ?? 0,
+          isCombinable: this.prefilledTableIsCombinable() ?? false,
         }));
       }
     });
@@ -245,6 +276,29 @@ export class BookingFormComponent {
       if (svcs.length > 0 && !this.form.get('serviceId')?.value) {
         untracked(() => this.form.get('serviceId')?.setValue(svcs[0].id));
       }
+    });
+
+    // Charge les tables combinables quand la table principale est combinable
+    effect(() => {
+      const table = this.selectedTable();
+      const serviceId = this.serviceId$();
+      const dateVal = this.form.get('date')?.value as Date | null;
+      if (!table?.isCombinable || !serviceId || !dateVal) {
+        untracked(() => {
+          this.combinableTables.set([]);
+          this.secondaryTableId.set(null);
+        });
+        return;
+      }
+      const date = format(dateVal, 'yyyy-MM-dd');
+      const guestsCount = this.form.get('guestsCount')?.value ?? 1;
+      this.availabilityService
+        .search(date, serviceId, guestsCount as number)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(res => {
+          const others = res.tables.filter(t => t.isCombinable && t.id !== table.id);
+          untracked(() => this.combinableTables.set(others));
+        });
     });
 
     // Recherche client avec debounce (Staff)
@@ -306,6 +360,7 @@ export class BookingFormComponent {
       switchMap(customer =>
         this.bookingService.createBooking({
           tableId: this.selectedTable()?.id ?? null,
+          secondaryTableId: this.secondaryTableId() ?? undefined,
           customerId: customer.id,
           serviceId: v.serviceId!,
           bookingDate,
@@ -331,6 +386,10 @@ export class BookingFormComponent {
     });
   }
 
+  protected onSecondaryTableChange(tableId: string | null): void {
+    this.secondaryTableId.set(tableId || null);
+  }
+
   protected clearCustomer(): void {
     this.foundCustomer.set(null);
     this.customerSearchCtrl.setValue('');
@@ -347,6 +406,8 @@ export class BookingFormComponent {
   protected onNewBooking(): void {
     this.successBooking.set(null);
     this.selectedTable.set(null);
+    this.secondaryTableId.set(null);
+    this.combinableTables.set([]);
     this.foundCustomer.set(null);
     this.customerSearchCtrl.setValue('');
     this.form.reset({ date: new Date(), guestsCount: 2 });

@@ -9,18 +9,21 @@
   display: block;
 
   &:focus-within > div {
-    @apply ring-2 ring-blue-400 ring-offset-1;
+    outline: 2px solid #60a5fa; /* ring-blue-400 */
+    outline-offset: 1px;
   }
 }
 
 div {
-  @apply transition-all duration-150;
+  transition: transform 150ms ease, box-shadow 150ms ease;
 
   &:hover {
-    @apply -translate-y-0.5 shadow-lg;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
 
   &:active {
-    @apply translate-y-0 shadow-sm;
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 }

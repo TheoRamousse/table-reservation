@@ -158,4 +158,17 @@ public class DomainExceptionTests
         ex.Provided.Should().Be(provided);
         ex.Message.Should().Contain(provided.ToString());
     }
+
+    [Fact]
+    public void RestaurantClosedException_Should_ExposePropertiesAndMessage()
+    {
+        var closedDate = new DateOnly(2026, 12, 25);
+        const string reason = "Noël";
+
+        var ex = new RestaurantClosedException(closedDate, reason);
+
+        ex.ClosedDate.Should().Be(closedDate);
+        ex.Reason.Should().Be(reason);
+        ex.Message.Should().Contain(closedDate.ToString()); // l:4 String message→""
+    }
 }

@@ -96,4 +96,26 @@ public class ClosedDayTests
         // Assert
         act.Should().NotThrow("un jour non fermé doit être accepté normalement");
     }
+
+    [Fact]
+    public void Should_ExposeJourFermeReason_When_BookingOnClosedDay()
+    {
+        // Arrange
+        var customer = Builders.Customer();
+        var table = Builders.Table();
+        var service = Builders.DinnerService();
+        var futureDate = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(3));
+
+        // Act
+        var ex = Assert.Throws<RestaurantClosedException>(() =>
+            Domain.Entities.Booking.Create(
+                customer, table, service, futureDate,
+                arrivalTime: new TimeOnly(19, 30),
+                guestsCount: 2, source: BookingSource.Online,
+                specialRequests: null, clock: _clock,
+                isClosedDay: true));
+
+        // Assert
+        ex.Reason.Should().Be("Jour fermé", "la raison transmise à l'exception doit être 'Jour fermé'"); // l:79 String "Jour fermé"→""
+    }
 }

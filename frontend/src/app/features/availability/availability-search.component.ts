@@ -15,7 +15,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { format } from 'date-fns';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,6 +35,7 @@ import { AvailableTable } from '../../core/models/table.model';
   templateUrl: './availability-search.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     ReactiveFormsModule,
     MatButtonModule,
     MatDatepickerModule,

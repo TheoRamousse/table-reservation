@@ -8,7 +8,7 @@ namespace Reservation.Infrastructure.Persistence.Repositories;
 public sealed class BookingRepository(ReservationDbContext db) : IBookingRepository
 {
     public async Task<Booking?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await db.Bookings.FindAsync([id], ct);
+        => await db.Bookings.FirstOrDefaultAsync(b => b.Id == id, ct);
 
     public async Task AddAsync(Booking booking, CancellationToken ct = default)
         => await db.Bookings.AddAsync(booking, ct);

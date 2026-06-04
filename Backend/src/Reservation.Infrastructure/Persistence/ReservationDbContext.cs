@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reservation.Domain.Entities;
 
 namespace Reservation.Infrastructure.Persistence;
@@ -15,5 +16,13 @@ public sealed class ReservationDbContext(DbContextOptions<ReservationDbContext> 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ReservationDbContext).Assembly);
+
+        // SQLite stores GUIDs as TEXT via the seed migrations — force string conversion
+        // so EF Core's WHERE parameters match the stored format.
+        var guidConverter = new GuidToStringConverter();
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            foreach (var property in entityType.GetProperties())
+                if (property.ClrType == typeof(Guid) || property.ClrType == typeof(Guid?))
+                    property.SetValueConverter(guidConverter);
     }
 }

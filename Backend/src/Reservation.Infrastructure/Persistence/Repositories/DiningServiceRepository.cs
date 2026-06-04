@@ -7,7 +7,7 @@ namespace Reservation.Infrastructure.Persistence.Repositories;
 public sealed class DiningServiceRepository(ReservationDbContext db) : IDiningServiceRepository
 {
     public async Task<DiningService?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await db.DiningServices.FindAsync([id], ct);
+        => await db.DiningServices.FirstOrDefaultAsync(s => s.Id == id, ct);
 
     public async Task<IEnumerable<DiningService>> GetAllActiveAsync(CancellationToken ct = default)
         => await db.DiningServices.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync(ct);

@@ -34,7 +34,7 @@ export class LoginComponent {
     this.error.set(null);
 
     this.authService.login(this.form.getRawValue() as LoginRequest).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => this.router.navigate(['/floor']),
       error: () => {
         this.error.set('Identifiants invalides.');
         this.isLoading.set(false);

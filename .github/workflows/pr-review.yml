@@ -22,7 +22,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          git diff origin/${{ github.base_ref }}...HEAD | bash review-pr.sh > findings.json
+          git diff origin/${{ github.base_ref }}...HEAD | bash review-pr.sh > findings.json || echo "[]" > findings.json
 
       - name: Post review
         uses: actions/github-script@v7
@@ -54,7 +54,7 @@ jobs:
             const icon = { critical: '🚨', warning: '⚠️', info: 'ℹ️' };
 
             const rows = findings
-              .map(f => `| ${icon[f.severity] ?? ''} \`${f.severity}\` | \`${f.file}:${f.line}\` | \`${f.category}\` | ${f.message} |`)
+              .map(f => `| ${icon[f.severity] ?? ''} \`${f.severity}\` | \`${f.file}:${f.line}\` | \`${f.category}\` | ${f.message.replace(/\|/g, '\\|')} |`)
               .join('\n');
 
             const header = criticals.length > 0

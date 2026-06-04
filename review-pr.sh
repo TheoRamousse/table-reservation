@@ -11,7 +11,7 @@ if [[ -z "$DIFF" ]]; then
 fi
 
 PROMPT="Tu es un reviewer strict pour un système de réservation de tables restaurant.
-Backend : ASP.NET Core 10 / C# 14 — Clean Architecture + CQRS (MediatR). Règles métier dans documentation/specs.md (RB-001–RB-017).
+Backend : ASP.NET Core 10 / C# 14 — Clean Architecture + CQRS (MediatR). Règles métier dans docs/prds/prd-table-reservation-2026-06-04/prd.md (RB-001–RB-017).
 Frontend : Angular 20 avec Signals.
 Base de données : SQLite via EF Core.
 

@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # Backend — .NET 10
+  # ─────────────────────────────────────────────
+  backend:
+    name: Backend — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-
+
+      - name: Restore
+        run: dotnet restore Reservation.sln
+
+      - name: Build
+        run: dotnet build Reservation.sln --no-restore --configuration Release
+
+      - name: Unit tests
+        run: dotnet test Reservation.sln --no-build --configuration Release --filter "Category=Unit"
+
+      - name: Publish
+        if: github.event_name == 'push'
+        run: dotnet publish src/Reservation.Api/Reservation.Api.csproj --configuration Release --output ./publish/api
+
+      - name: Zip
+        if: github.event_name == 'push'
+        run: cd publish && zip -r ../reservation-api.zip api/
+
+      - name: Upload artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reservation-api [${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOP' }}]
+          path: reservation-api.zip
+
+  # ─────────────────────────────────────────────
+  # Frontend — Angular 20 / Karma
+  # ─────────────────────────────────────────────
+  frontend:
+    name: Frontend — Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: npm-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: npm-
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Unit tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless --no-progress
+        working-directory: frontend
+
+      - name: Build production
+        if: github.event_name == 'push'
+        run: npm run build -- --configuration production
+        working-directory: frontend
+
+      - name: Zip
+        if: github.event_name == 'push'
+        run: zip -r reservation-frontend.zip dist/
+        working-directory: frontend
+
+      - name: Upload artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reservation-frontend [${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOP' }}]
+          path: frontend/reservation-frontend.zip

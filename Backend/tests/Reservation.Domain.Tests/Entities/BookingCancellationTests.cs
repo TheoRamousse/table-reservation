@@ -94,6 +94,23 @@ public class BookingCancellationTests
         Action act = () => booking.Cancel(string.Empty, DateTimeOffset.UtcNow);
 
         // Assert
-        act.Should().Throw<ArgumentException>("CancellationReason est obligatoire");
+        act.Should().Throw<ArgumentException>("CancellationReason est obligatoire")
+           .WithMessage("*obligatoire*");
+    }
+
+    [Fact]
+    public void Should_NotSetLateCancel_When_CancelledExactly24HoursBeforeArrival()
+    {
+        // Arrange — arrivalTime = 20h le 5 juin, annulation le 4 juin à 20h (exactement 24h avant)
+        var arrivalTime = new TimeOnly(20, 0);
+        var bookingDate = new DateOnly(2026, 6, 5);
+        var now = new DateTimeOffset(2026, 6, 4, 20, 0, 0, TimeSpan.Zero); // pile 24h avant
+        var booking = Builders.ConfirmedBooking(bookingDate: bookingDate, arrivalTime: arrivalTime);
+
+        // Act
+        booking.Cancel("Indisponible", now);
+
+        // Assert
+        booking.LateCancel.Should().BeFalse("la condition est now > arrivalUtc-24h (strictement), la borne exacte n'est pas un LateCancel");
     }
 }

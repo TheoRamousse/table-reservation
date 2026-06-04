@@ -125,4 +125,52 @@ public class CustomerTests
         // Assert
         customer.IsBlacklisted.Should().BeFalse();
     }
+
+    // ── Customer.Create : validations des paramètres (FR-10) ─────────────
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Throw_When_FirstNameIsEmpty(string firstName)
+    {
+        // Act
+        var act = () => Customer.Create(firstName, "Dupont", "0600000000");
+
+        // Assert
+        act.Should().Throw<ArgumentException>("le prénom est obligatoire");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Throw_When_LastNameIsEmpty(string lastName)
+    {
+        // Act
+        var act = () => Customer.Create("Jean", lastName, "0600000000");
+
+        // Assert
+        act.Should().Throw<ArgumentException>("le nom est obligatoire");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Should_Throw_When_PhoneIsEmpty(string phone)
+    {
+        // Act
+        var act = () => Customer.Create("Jean", "Dupont", phone);
+
+        // Assert
+        act.Should().Throw<ArgumentException>("le téléphone est obligatoire");
+    }
+
+    [Fact]
+    public void Should_CreateCustomer_WithIsBlacklistedFalse()
+    {
+        // Act
+        var customer = Customer.Create("Jean", "Dupont", "0600000000");
+
+        // Assert
+        customer.IsBlacklisted.Should().BeFalse("un nouveau client n'est pas blacklisté par défaut");
+    }
 }

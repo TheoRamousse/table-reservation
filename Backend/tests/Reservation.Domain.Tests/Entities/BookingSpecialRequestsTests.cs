@@ -146,4 +146,26 @@ public class BookingSpecialRequestsTests
         booking.IsCelebration.Should().BeFalse();
         booking.NeedsHighChair.Should().BeFalse();
     }
+
+    [Fact]
+    public void Should_NotSetAnyFlag_When_SpecialRequestsHasNoKeyword()
+    {
+        // Arrange — texte non nul sans aucun mot-clé (tue les 7 mutations keyword→"")
+        var service = Builders.DinnerService();
+        var table = Builders.Table();
+        var customer = Builders.Customer();
+        var date = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(3));
+
+        // Act
+        var booking = Domain.Entities.Booking.Create(
+            customer, table, service, date,
+            arrivalTime: new TimeOnly(19, 30),
+            guestsCount: 2, source: BookingSource.Online,
+            specialRequests: "table au calme, vue sur jardin", clock: _clock);
+
+        // Assert
+        booking.HasAllergyAlert.Should().BeFalse("aucun mot-clé allergie/intolérance présent (FR-23)");
+        booking.IsCelebration.Should().BeFalse("aucun mot-clé anniversaire/mariage/fiançailles présent (FR-23)");
+        booking.NeedsHighChair.Should().BeFalse("aucun mot-clé chaise bébé/siège enfant présent (FR-23)");
+    }
 }

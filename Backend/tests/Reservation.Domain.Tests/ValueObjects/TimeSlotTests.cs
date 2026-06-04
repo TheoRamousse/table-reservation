@@ -64,4 +64,18 @@ public class TimeSlotTests
         // Act & Assert
         slotA.Overlaps(slotB).Should().Be(slotB.Overlaps(slotA));
     }
+
+    [Fact]
+    public void Should_Throw_When_EndEqualsStart()
+    {
+        // Arrange
+        var base_ = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
+
+        // Act — end == start : durée nulle, invalide
+        var act = () => new TimeSlot(base_, base_);
+
+        // Assert
+        act.Should().Throw<ArgumentException>("un créneau de durée nulle est invalide (end <= start)")
+           .WithMessage("*fin du créneau*");
+    }
 }

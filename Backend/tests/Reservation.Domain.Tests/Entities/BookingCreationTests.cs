@@ -157,7 +157,8 @@ public class BookingCreationTests
             existingServiceCovers: 8);
 
         // Assert
-        act.Should().Throw<ServiceFullyBookedException>("dépasser MaxCovers doit être rejeté (RB-003)");
+        act.Should().Throw<ServiceFullyBookedException>("dépasser MaxCovers doit être rejeté (RB-003)")
+           .Which.CurrentTotal.Should().Be(11); // 8 existants + 3 nouveaux
     }
 
     [Fact]
@@ -413,5 +414,139 @@ public class BookingCreationTests
 
         // Assert
         act.Should().Throw<CustomerBlacklistedException>("un client blacklisté ne peut pas réserver (RB-007)");
+    }
+
+    // ── FR-1 : borne inférieure StartTime (RB-001) ────────────────────────
+
+    [Fact]
+    public void Should_CreateBooking_When_ArrivalTimeEqualsStartTime()
+    {
+        // Arrange
+        var service = Builders.DinnerService(); // StartTime = 19:00
+        var table = Builders.Table();
+        var customer = Builders.Customer();
+        var date = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(3));
+
+        // Act
+        var act = () => Domain.Entities.Booking.Create(
+            customer, table, service, date,
+            arrivalTime: new TimeOnly(19, 0), // == StartTime
+            guestsCount: 2, source: BookingSource.Online,
+            specialRequests: null, clock: _clock);
+
+        // Assert
+        act.Should().NotThrow("ArrivalTime == StartTime est la borne inclusive autorisée (RB-001)");
+    }
+
+    // ── FR-6 : bornes d'horizon et délai minimum (RB-005, RB-006) ─────────
+
+    [Fact]
+    public void Should_CreateBooking_When_OnlineBookingAtExactHorizon()
+    {
+        // Arrange — Online standard : horizon = 30 jours
+        var service = Builders.DinnerService();
+        var table = Builders.Table();
+        var customer = Builders.Customer(vipLevel: VipLevel.None);
+        var date = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(30)); // juste à la limite
+
+        // Act
+        var act = () => Domain.Entities.Booking.Create(
+            customer, table, service, date,
+            arrivalTime: new TimeOnly(19, 30),
+            guestsCount: 2, source: BookingSource.Online,
+            specialRequests: null, clock: _clock);
+
+        // Assert
+        act.Should().NotThrow("daysUntilBooking == maxDays est la borne inclusive autorisée (RB-005)");
+    }
+
+    [Fact]
+    public void Should_CreateBooking_When_PhoneBookingAt31Days()
+    {
+        // Arrange — Phone standard : horizon = 90 jours
+        var service = Builders.DinnerService();
+        var table = Builders.Table();
+        var customer = Builders.Customer(vipLevel: VipLevel.None);
+        var date = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(31));
+
+        // Act
+        var act = () => Domain.Entities.Booking.Create(
+            customer, table, service, date,
+            arrivalTime: new TimeOnly(19, 30),
+            guestsCount: 2, source: BookingSource.Phone,
+            specialRequests: null, clock: _clock);
+
+        // Assert
+        act.Should().NotThrow("Phone standard a un horizon de 90 jours, 31 jours est autorisé (RB-005)");
+    }
+
+    [Fact]
+    public void Should_CreateBooking_When_PhoneBookingWith16MinLeadTime()
+    {
+        // Arrange — horloge à 10h00, arrivalTime à 10h16 (16 min d'avance, Phone requiert 15)
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 4, 10, 0, 0, TimeSpan.Zero));
+        var service = Builders.DinnerService(
+            startTime: new TimeOnly(10, 0),
+            endTime: new TimeOnly(14, 0),
+            lastBookingTime: new TimeOnly(13, 30));
+        var table = Builders.Table();
+        var customer = Builders.Customer();
+        var today = DateOnly.FromDateTime(clock.UtcNow.Date);
+
+        // Act
+        var act = () => Domain.Entities.Booking.Create(
+            customer, table, service, today,
+            arrivalTime: new TimeOnly(10, 16),
+            guestsCount: 2, source: BookingSource.Phone,
+            specialRequests: null, clock: clock);
+
+        // Assert
+        act.Should().NotThrow("Phone requiert 15 min de délai, 16 min est suffisant (RB-006)");
+    }
+
+    [Fact]
+    public void Should_CreateBooking_When_OnlineBookingExactly120MinBefore()
+    {
+        // Arrange — horloge à 10h00, arrivalTime à 12h00 (exactement 120 min = borne inclusive)
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 4, 10, 0, 0, TimeSpan.Zero));
+        var service = Builders.DinnerService(
+            startTime: new TimeOnly(12, 0),
+            endTime: new TimeOnly(16, 0),
+            lastBookingTime: new TimeOnly(15, 30));
+        var table = Builders.Table();
+        var customer = Builders.Customer();
+        var today = DateOnly.FromDateTime(clock.UtcNow.Date);
+
+        // Act
+        var act = () => Domain.Entities.Booking.Create(
+            customer, table, service, today,
+            arrivalTime: new TimeOnly(12, 0),
+            guestsCount: 2, source: BookingSource.Online,
+            specialRequests: null, clock: clock);
+
+        // Assert
+        act.Should().NotThrow("minutesLeft == minMinutes est la borne inclusive autorisée pour Online (RB-006)");
+    }
+
+    // ── LateCancel initial à false (RB-009) ───────────────────────────────
+
+    [Fact]
+    public void Should_SetLateCancelToFalse_When_BookingCreated()
+    {
+        // Arrange
+        var service = Builders.DinnerService();
+        var table = Builders.Table();
+        var customer = Builders.Customer();
+        var date = DateOnly.FromDateTime(_clock.UtcNow.Date.AddDays(3));
+
+        // Act
+        var booking = Domain.Entities.Booking.Create(
+            customer, table, service, date,
+            arrivalTime: new TimeOnly(19, 30),
+            guestsCount: 2, source: BookingSource.Online,
+            specialRequests: null, clock: _clock);
+
+        // Assert
+        booking.LateCancel.Should().BeFalse("une nouvelle réservation n'est jamais un LateCancel");
     }
 }

@@ -61,7 +61,8 @@ public sealed class Booking
         string? specialRequests,
         IClock clock,
         int existingServiceCovers = 0,
-        IEnumerable<Booking>? existingTableBookings = null)
+        IEnumerable<Booking>? existingTableBookings = null,
+        bool isClosedDay = false)
     {
         // FR-22 : longueur des demandes spéciales
         if (specialRequests is { Length: > 500 })
@@ -72,6 +73,10 @@ public sealed class Booking
         // FR-8 : date dans le passé
         if (bookingDate < today)
             throw new BookingDateInPastException(bookingDate);
+
+        // FR-25 : jour de fermeture
+        if (isClosedDay)
+            throw new RestaurantClosedException(bookingDate, "Jour fermé");
 
         // FR-6 (WalkIn) : doit être aujourd'hui
         if (source == BookingSource.WalkIn && bookingDate != today)
@@ -200,6 +205,19 @@ public sealed class Booking
         CancellationReason = reason;
         Status = BookingStatus.Cancelled;
     }
+
+    // FR-13 : modification avec revalidation complète
+    public void Modify(
+        Table? newTable,
+        DiningService service,
+        DateOnly newBookingDate,
+        TimeOnly newArrivalTime,
+        int newGuestsCount,
+        string? newSpecialRequests,
+        IClock clock,
+        int existingServiceCovers = 0,
+        IEnumerable<Booking>? existingTableBookings = null)
+        => throw new NotImplementedException();
 
     public TimeSlot GetTimeSlot(DiningService service)
     {

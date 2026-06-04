@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Tailwind v4 — indiquer explicitement où scanner les classes dans Angular */
+@source "./app";
+
 @theme {
   --color-table-libre: #22c55e;
   --color-table-en-attente: #eab308;

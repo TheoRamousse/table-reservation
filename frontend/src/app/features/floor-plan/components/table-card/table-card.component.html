@@ -1,13 +1,17 @@
 <div
-  class="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden select-none"
+  class="relative rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer overflow-hidden select-none"
+  role="button"
+  tabindex="0"
   [class.opacity-40]="table().status === TableStatus.Inactive"
+  [class.cursor-not-allowed]="table().status === TableStatus.Inactive"
+  [class.pointer-events-none]="table().status === TableStatus.Inactive"
   (click)="tableClick.emit(table())"
   [matTooltip]="tooltipText()"
   [matTooltipShowDelay]="300"
   [matTooltipDisabled]="!tooltipText()"
 >
-  <!-- Barre de couleur de statut -->
-  <div class="h-2 w-full" [class]="statusConfig().cssClass"></div>
+  <!-- Barre de couleur de statut — h-3 pour meilleure visibilité tablette -->
+  <div class="h-3 w-full" [class]="statusConfig().cssClass"></div>
 
   <div class="p-3">
     <!-- Numéro + capacité -->
@@ -16,12 +20,16 @@
       <span class="text-xs text-gray-400">{{ table().capacity }} pers.</span>
     </div>
 
-    <!-- Badge statut (label textuel WCAG 2.1 AA) -->
+    <!-- Badge statut : dot + label (WCAG 2.1 AA — texte gris foncé sur fond blanc) -->
     <span
-      class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-      [class]="statusConfig().cssClass"
+      class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700"
       [attr.aria-label]="'Statut : ' + statusConfig().label"
     >
+      <span
+        class="inline-block w-2 h-2 rounded-full flex-shrink-0"
+        [class]="statusConfig().cssClass"
+        aria-hidden="true"
+      ></span>
       {{ statusConfig().label }}
     </span>
 
@@ -30,7 +38,7 @@
       <div class="mt-2 space-y-0.5">
         <div class="text-xs font-medium text-gray-800 truncate">{{ booking.customerName }}</div>
         <div class="text-xs text-gray-500">{{ booking.guestsCount }} cvts · {{ booking.arrivalTime }}</div>
-        <!-- Flags -->
+        <!-- Flags informatifs -->
         @if (booking.hasAllergyAlert || booking.isCelebration || booking.needsHighChair) {
           <div class="flex gap-1 mt-1 text-sm">
             @if (booking.hasAllergyAlert) {
@@ -47,4 +55,9 @@
       </div>
     }
   </div>
+
+  <!-- Indicateur d'action pour table libre -->
+  @if (table().status === TableStatus.Free) {
+    <div class="absolute bottom-2 right-2 text-gray-300 text-lg leading-none font-light select-none" aria-hidden="true">+</div>
+  }
 </div>

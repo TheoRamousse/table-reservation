@@ -4,3 +4,23 @@
 .status-occupee     { background-color: #f97316; }
 .status-noshow      { background-color: #ef4444; }
 .status-inactive    { background-color: #9ca3af; }
+
+:host {
+  display: block;
+
+  &:focus-within > div {
+    @apply ring-2 ring-blue-400 ring-offset-1;
+  }
+}
+
+div {
+  @apply transition-all duration-150;
+
+  &:hover {
+    @apply -translate-y-0.5 shadow-lg;
+  }
+
+  &:active {
+    @apply translate-y-0 shadow-sm;
+  }
+}

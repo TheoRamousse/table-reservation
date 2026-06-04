@@ -11,3 +11,12 @@
   --color-table-noshow: #ef4444;
   --color-table-inactive: #9ca3af;
 }
+
+/*
+ * Fix : Tailwind v4 preflight applique border-color sur tous les éléments (*),
+ * ce qui interfère avec le rendu du notch Angular Material MDC (outline form field).
+ * Le notch doit avoir border-right: none pour que le label flottant s'affiche correctement.
+ */
+.mdc-notched-outline__notch {
+  border-right: none;
+}

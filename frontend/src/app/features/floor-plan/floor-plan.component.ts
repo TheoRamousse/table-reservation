@@ -13,6 +13,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { filter, switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule, MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +24,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BookingFormComponent } from '../booking/booking-form.component';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { FloorService } from '../../core/services/floor.service';
 import { FloorHubService } from '../../core/services/floor-hub.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -40,6 +41,7 @@ import { TableCardComponent } from './components/table-card/table-card.component
   imports: [
     FormsModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
@@ -83,6 +85,10 @@ export class FloorPlanComponent {
     }
     return [...map.entries()].map(([zone, zoneTables]) => ({ zone, tables: zoneTables }));
   });
+
+  protected readonly selectedDateAsDate = computed(() =>
+    parse(this.selectedDate(), 'yyyy-MM-dd', new Date()),
+  );
 
   protected readonly isLoading = computed(
     () => this.selectedServiceId() !== '' && this.snapshot() === null,
@@ -158,8 +164,10 @@ export class FloorPlanComponent {
 
   // 5. Handlers de template
 
-  protected onDateChange(event: Event): void {
-    this.selectedDate.set((event.target as HTMLInputElement).value);
+  protected onDateChange(event: MatDatepickerInputEvent<Date>): void {
+    if (event.value) {
+      this.selectedDate.set(format(event.value, 'yyyy-MM-dd'));
+    }
   }
 
   protected onServiceSelected(serviceId: string): void {

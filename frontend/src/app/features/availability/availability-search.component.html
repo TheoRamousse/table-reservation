@@ -11,9 +11,12 @@
       <form [formGroup]="searchForm" (ngSubmit)="onSearch()"
             class="flex flex-col sm:flex-row flex-wrap gap-3 items-start">
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-36">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 min-w-44">
           <mat-label>Date</mat-label>
-          <input matInput type="date" formControlName="date" [min]="today" aria-required="true" />
+          <input matInput [matDatepicker]="datePicker" formControlName="date"
+                 [min]="minDate" aria-required="true" readonly />
+          <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+          <mat-datepicker #datePicker />
           <mat-error>Choisissez une date à partir d'aujourd'hui</mat-error>
         </mat-form-field>
 

@@ -1,0 +1,50 @@
+<div
+  class="rounded-lg border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden select-none"
+  [class.opacity-40]="table().status === TableStatus.Inactive"
+  (click)="tableClick.emit(table())"
+  [matTooltip]="tooltipText()"
+  [matTooltipShowDelay]="300"
+  [matTooltipDisabled]="!tooltipText()"
+>
+  <!-- Barre de couleur de statut -->
+  <div class="h-2 w-full" [class]="statusConfig().cssClass"></div>
+
+  <div class="p-3">
+    <!-- Numéro + capacité -->
+    <div class="flex items-center justify-between mb-2">
+      <span class="font-bold text-gray-900 text-base">T{{ table().number }}</span>
+      <span class="text-xs text-gray-400">{{ table().capacity }} pers.</span>
+    </div>
+
+    <!-- Badge statut (label textuel WCAG 2.1 AA) -->
+    <span
+      class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full text-white"
+      [class]="statusConfig().cssClass"
+      [attr.aria-label]="'Statut : ' + statusConfig().label"
+    >
+      {{ statusConfig().label }}
+    </span>
+
+    <!-- Détails réservation active -->
+    @if (table().activeBooking; as booking) {
+      <div class="mt-2 space-y-0.5">
+        <div class="text-xs font-medium text-gray-800 truncate">{{ booking.customerName }}</div>
+        <div class="text-xs text-gray-500">{{ booking.guestsCount }} cvts · {{ booking.arrivalTime }}</div>
+        <!-- Flags -->
+        @if (booking.hasAllergyAlert || booking.isCelebration || booking.needsHighChair) {
+          <div class="flex gap-1 mt-1 text-sm">
+            @if (booking.hasAllergyAlert) {
+              <span title="Allergie" aria-label="Allergie">⚠️</span>
+            }
+            @if (booking.isCelebration) {
+              <span title="Célébration" aria-label="Célébration">🎂</span>
+            }
+            @if (booking.needsHighChair) {
+              <span title="Chaise haute" aria-label="Chaise haute">👶</span>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

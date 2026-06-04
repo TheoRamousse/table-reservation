@@ -26,5 +26,16 @@ public sealed class Table
     }
 
     public static Table Create(int number, int capacity, int minCapacity, TableZone zone, bool isCombinable = false)
-        => throw new NotImplementedException();
+    {
+        if (capacity <= 0)
+            throw new ArgumentException("La capacité doit être supérieure à zéro.", nameof(capacity));
+        if (minCapacity <= 0)
+            throw new ArgumentException("La capacité minimale doit être supérieure à zéro.", nameof(minCapacity));
+        if (minCapacity > capacity)
+            throw new ArgumentException(
+                $"La capacité minimale ({minCapacity}) ne peut pas dépasser la capacité totale ({capacity}).",
+                nameof(minCapacity));
+
+        return new Table(Guid.NewGuid(), number, capacity, minCapacity, zone, isCombinable, isActive: true);
+    }
 }

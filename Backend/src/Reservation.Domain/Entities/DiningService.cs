@@ -28,5 +28,16 @@ public sealed class DiningService
 
     public static DiningService Create(string name, TimeOnly startTime, TimeOnly endTime,
         TimeOnly lastBookingTime, int durationMinutes, int maxCovers)
-        => throw new NotImplementedException();
+    {
+        if (endTime <= startTime)
+            throw new ArgumentException("L'heure de fin doit être après l'heure de début.");
+        if (lastBookingTime > endTime)
+            throw new ArgumentException("L'heure limite de réservation ne peut pas dépasser l'heure de fin.");
+        if (durationMinutes <= 0)
+            throw new ArgumentException("La durée doit être supérieure à zéro.", nameof(durationMinutes));
+        if (maxCovers <= 0)
+            throw new ArgumentException("Le nombre maximum de couverts doit être supérieur à zéro.", nameof(maxCovers));
+
+        return new DiningService(Guid.NewGuid(), name, startTime, endTime, lastBookingTime, durationMinutes, maxCovers);
+    }
 }

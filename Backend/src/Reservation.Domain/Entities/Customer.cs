@@ -29,16 +29,39 @@ public sealed class Customer
         VipLevel = vipLevel;
     }
 
+    private int _lateCancelCount;
+
     public static Customer Create(string firstName, string lastName, string phone, string? email = null)
-        => throw new NotImplementedException();
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(phone);
 
-    public void RegisterNoShow() => throw new NotImplementedException();
+        return new Customer(Guid.NewGuid(), firstName, lastName, phone, email,
+            isBlacklisted: false, noShowCount: 0, vipLevel: VipLevel.None);
+    }
 
-    public void RegisterLateCancel() => throw new NotImplementedException();
+    public void RegisterNoShow()
+    {
+        NoShowCount++;
+        if (NoShowCount >= 3)
+            IsBlacklisted = true;
+    }
 
-    public void EnsureCanBook() => throw new NotImplementedException();
+    public void RegisterLateCancel()
+    {
+        _lateCancelCount++;
+        if (_lateCancelCount >= 2)
+            VipLevel = VipLevel.None;
+    }
 
-    public void Blacklist() => throw new NotImplementedException();
+    public void EnsureCanBook()
+    {
+        if (IsBlacklisted)
+            throw new CustomerBlacklistedException(Id);
+    }
 
-    public void LiftBlacklist() => throw new NotImplementedException();
+    public void Blacklist() => IsBlacklisted = true;
+
+    public void LiftBlacklist() => IsBlacklisted = false;
 }

@@ -22,8 +22,9 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs/operators';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -89,6 +90,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -125,7 +127,7 @@ export class BookingFormComponent {
   });
   protected readonly isOnline = computed(() => this.auth.role() === 'Online');
 
-  protected readonly today = format(new Date(), 'yyyy-MM-dd');
+  protected readonly minDate = new Date();
 
   protected readonly services = toSignal(
     this.floorService.getServices(),
@@ -138,7 +140,7 @@ export class BookingFormComponent {
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.email]],
     phone: ['', [Validators.pattern(/^0[0-9]{9}$/)]],
-    date: [this.today, [Validators.required, this.dateNotInPast.bind(this)]],
+    date: [new Date() as Date | null, [Validators.required, this.dateNotInPast.bind(this)]],
     serviceId: ['', Validators.required],
     arrivalTime: ['', Validators.required],
     guestsCount: [2, [Validators.required, Validators.min(1), Validators.max(30)]],
@@ -207,7 +209,7 @@ export class BookingFormComponent {
         capacity: state.tableCapacity ?? 0,
       });
     }
-    if (state?.date) this.form.get('date')?.setValue(state.date, { emitEvent: false });
+    if (state?.date) this.form.get('date')?.setValue(parse(state.date, 'yyyy-MM-dd', new Date()), { emitEvent: false });
     if (state?.serviceId) this.form.get('serviceId')?.setValue(state.serviceId, { emitEvent: false });
     if (state?.guestsCount) this.form.get('guestsCount')?.setValue(state.guestsCount, { emitEvent: false });
 
@@ -225,11 +227,12 @@ export class BookingFormComponent {
     });
     effect(() => {
       const d = this.prefilledDate();
-      if (d) untracked(() => this.form.get('date')?.setValue(d, { emitEvent: false }));
+      if (d) untracked(() => this.form.get('date')?.setValue(parse(d, 'yyyy-MM-dd', new Date()), { emitEvent: false }));
     });
     effect(() => {
+      // emitEvent: true (défaut) pour que valueChanges émette et mette à jour timeSlots()
       const s = this.prefilledServiceId();
-      if (s) untracked(() => this.form.get('serviceId')?.setValue(s, { emitEvent: false }));
+      if (s) untracked(() => this.form.get('serviceId')?.setValue(s));
     });
     effect(() => {
       const g = this.prefilledGuestsCount();
@@ -296,13 +299,16 @@ export class BookingFormComponent {
           phone: v.phone || undefined,
         });
 
+    const dateValue = v.date as unknown as Date | null;
+    const bookingDate = dateValue ? format(dateValue, 'yyyy-MM-dd') : '';
+
     customer$.pipe(
       switchMap(customer =>
         this.bookingService.createBooking({
           tableId: this.selectedTable()?.id ?? null,
           customerId: customer.id,
           serviceId: v.serviceId!,
-          bookingDate: v.date!,
+          bookingDate,
           arrivalTime: v.arrivalTime!,
           guestsCount: v.guestsCount!,
           specialRequests: v.specialRequests || undefined,
@@ -343,7 +349,7 @@ export class BookingFormComponent {
     this.selectedTable.set(null);
     this.foundCustomer.set(null);
     this.customerSearchCtrl.setValue('');
-    this.form.reset({ date: this.today, guestsCount: 2 });
+    this.form.reset({ date: new Date(), guestsCount: 2 });
   }
 
   protected onBackToFloor(): void { this.closed.emit(); }
@@ -351,6 +357,9 @@ export class BookingFormComponent {
 
   private dateNotInPast(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
-    return control.value < format(new Date(), 'yyyy-MM-dd') ? { dateInPast: true } : null;
+    const date = control.value as Date;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today ? { dateInPast: true } : null;
   }
 }

@@ -159,7 +159,10 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Date *</mat-label>
-              <input matInput type="date" formControlName="date" [min]="today" />
+              <input matInput [matDatepicker]="datePicker" formControlName="date"
+                     [min]="minDate" readonly />
+              <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+              <mat-datepicker #datePicker />
               <mat-error>Date invalide ou passée</mat-error>
             </mat-form-field>
 

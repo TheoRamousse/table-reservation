@@ -31,9 +31,12 @@
     </h1>
 
     <!-- Sélecteur date -->
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0 w-36">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="shrink-0 min-w-[11rem]">
       <mat-label>Date</mat-label>
-      <input matInput type="date" [value]="selectedDate()" (change)="onDateChange($event)" />
+      <input matInput [matDatepicker]="datePicker" [value]="selectedDateAsDate()"
+             (dateChange)="onDateChange($event)" readonly />
+      <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+      <mat-datepicker #datePicker />
     </mat-form-field>
 
     <!-- Sélecteur service -->

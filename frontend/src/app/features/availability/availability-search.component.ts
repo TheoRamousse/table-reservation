@@ -19,6 +19,7 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { format } from 'date-fns';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -36,6 +37,7 @@ import { AvailableTable } from '../../core/models/table.model';
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -50,7 +52,7 @@ export class AvailabilitySearchComponent {
   private readonly floorService = inject(FloorService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly today = format(new Date(), 'yyyy-MM-dd');
+  protected readonly minDate = new Date();
 
   protected readonly services = toSignal(
     this.floorService.getServices(),
@@ -68,7 +70,7 @@ export class AvailabilitySearchComponent {
   protected readonly lastZoneFiltered = signal(false);
 
   protected readonly searchForm = this.fb.group({
-    date: [this.today, [Validators.required, this.dateNotInPast.bind(this)]],
+    date: [new Date() as Date | null, [Validators.required, this.dateNotInPast.bind(this)]],
     serviceId: ['', Validators.required],
     guestsCount: [2, [Validators.required, Validators.min(1), Validators.max(30)]],
     zone: [null as string | null],
@@ -85,9 +87,10 @@ export class AvailabilitySearchComponent {
     if (this.searchForm.invalid || this.isSearching()) return;
 
     const { date, serviceId, guestsCount, zone } = this.searchForm.getRawValue();
+    const dateStr = date ? format(date as unknown as Date, 'yyyy-MM-dd') : '';
     const serviceName = this.services().find(s => s.id === serviceId)?.name ?? '';
 
-    this.lastDate.set(date ?? '');
+    this.lastDate.set(dateStr);
     this.lastServiceName.set(serviceName);
     this.lastGuestsCount.set(guestsCount ?? 0);
     this.lastZoneFiltered.set(!!zone);
@@ -96,7 +99,7 @@ export class AvailabilitySearchComponent {
     this.fullyBooked.set(false);
 
     this.availabilityService
-      .search(date!, serviceId!, guestsCount!, zone ?? undefined)
+      .search(dateStr, serviceId!, guestsCount!, zone ?? undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: res => {
@@ -110,13 +113,14 @@ export class AvailabilitySearchComponent {
 
   protected onChooseTable(table: AvailableTable): void {
     const { date, serviceId, guestsCount } = this.searchForm.getRawValue();
+    const dateStr = date ? format(date as unknown as Date, 'yyyy-MM-dd') : '';
     this.router.navigate(['/bookings/new'], {
       state: {
         tableId: table.id,
         tableNumber: table.number,
         tableZone: table.zone,
         tableCapacity: table.capacity,
-        date,
+        date: dateStr,
         serviceId,
         guestsCount,
       },
@@ -124,7 +128,7 @@ export class AvailabilitySearchComponent {
   }
 
   protected resetDate(): void {
-    this.searchForm.get('date')?.setValue(this.today);
+    this.searchForm.get('date')?.setValue(new Date());
     this.searchState.set('idle');
   }
 
@@ -136,6 +140,9 @@ export class AvailabilitySearchComponent {
 
   private dateNotInPast(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
-    return control.value < format(new Date(), 'yyyy-MM-dd') ? { dateInPast: true } : null;
+    const date = control.value as Date;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today ? { dateInPast: true } : null;
   }
 }

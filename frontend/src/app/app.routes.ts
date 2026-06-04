@@ -25,6 +25,24 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/booking/booking-form.component').then(m => m.BookingFormComponent),
   },
+  {
+    path: 'admin/customers',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/customer/customer-search.component').then(m => m.CustomerSearchComponent),
+  },
+  {
+    path: 'admin/closed-days',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/closed-days.component').then(m => m.ClosedDaysComponent),
+  },
+  {
+    path: 'admin/tables',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/table-management.component').then(m => m.TableManagementComponent),
+  },
   { path: '', redirectTo: 'floor', pathMatch: 'full' },
   { path: '**', redirectTo: 'floor' },
 ];

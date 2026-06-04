@@ -102,6 +102,18 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(new HttpResponse({ status: 200, body: { tables, reason: null } }));
   }
 
+  // PATCH /api/customers/:id/blacklist
+  if (req.method === 'PATCH' && req.url.match(/\/api\/customers\/[^/]+\/blacklist/)) {
+    const id = req.url.split('/').slice(-2)[0];
+    const body = req.body as { isBlacklisted: boolean } | null;
+    const customer = MOCK_CUSTOMERS.find(c => c.id === id);
+    if (!customer) {
+      return throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }));
+    }
+    customer.isBlacklisted = body?.isBlacklisted ?? customer.isBlacklisted;
+    return of(new HttpResponse({ status: 200, body: { ...customer } }));
+  }
+
   // GET /api/customers (search — exclut /api/customers/{id}/...)
   if (req.method === 'GET' && req.url.includes('/api/customers') && !req.url.includes('/api/customers/')) {
     const params = new URL(req.urlWithParams, 'http://localhost').searchParams;

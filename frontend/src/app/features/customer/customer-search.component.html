@@ -1,0 +1,111 @@
+<div class="min-h-screen bg-gray-50">
+
+  <!-- En-tête -->
+  <header class="bg-white border-b px-6 py-4 sticky top-0 z-10 shadow-sm">
+    <h1 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+      <mat-icon class="text-gray-500">people</mat-icon>
+      Recherche client
+    </h1>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Champ de recherche -->
+    <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+      <mat-label>Téléphone ou email</mat-label>
+      <input matInput [formControl]="searchCtrl"
+             placeholder="0612345678 ou client@exemple.com" />
+      <mat-icon matSuffix>search</mat-icon>
+      @if (isSearching()) {
+        <mat-progress-spinner matSuffix diameter="20" mode="indeterminate" />
+      }
+      <mat-hint>Saisissez au moins 3 caractères pour lancer la recherche (debounce 400 ms)</mat-hint>
+    </mat-form-field>
+
+    <!-- État initial -->
+    @if (!hasSearched() && !isSearching()) {
+      <div class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+        <mat-icon class="!text-5xl !text-gray-300">person_search</mat-icon>
+        <p class="text-sm text-center">
+          Saisissez un numéro de téléphone ou un email pour rechercher un client
+        </p>
+      </div>
+    }
+
+    <!-- Aucun résultat -->
+    @if (isEmpty()) {
+      <div class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+        <mat-icon class="!text-5xl !text-gray-300">search_off</mat-icon>
+        <p class="text-sm">Aucun client trouvé</p>
+      </div>
+    }
+
+    <!-- Résultats -->
+    @if (hasResults()) {
+      <div class="space-y-3">
+        @for (customer of customers(); track customer.id) {
+          <div class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-3">
+
+            <!-- En-tête carte -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <mat-icon class="text-blue-500">person</mat-icon>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    {{ customer.firstName }} {{ customer.lastName }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    {{ customer.phone }}
+                    @if (customer.email) {
+                      · {{ customer.email }}
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                <!-- Badge VIP -->
+                @if (customer.vipLevel !== VipLevel.None) {
+                  <span class="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700
+                               border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+                    ⭐ {{ vipLabelMap[customer.vipLevel] }}
+                  </span>
+                }
+                <!-- Badge Blacklisté -->
+                @if (customer.isBlacklisted) {
+                  <span class="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700
+                               border border-red-300 px-2 py-0.5 rounded-full font-bold">
+                    <mat-icon class="!text-xs">block</mat-icon>
+                    Blacklisté
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <span class="flex items-center gap-1">
+                <mat-icon class="!text-base text-gray-400">warning</mat-icon>
+                {{ customer.noShowCount }} no-show{{ customer.noShowCount > 1 ? 's' : '' }}
+              </span>
+            </div>
+
+            <!-- Action lever blacklist -->
+            @if (customer.isBlacklisted) {
+              <div class="pt-2 border-t border-gray-100">
+                <button mat-stroked-button color="primary" (click)="onUnblacklist(customer)">
+                  <mat-icon>lock_open</mat-icon>
+                  Lever le blacklist
+                </button>
+              </div>
+            }
+
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+</div>

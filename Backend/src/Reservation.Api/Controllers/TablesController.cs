@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.DTOs;
@@ -10,6 +11,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/tables")]
+[Authorize]
 public sealed class TablesController(IMediator mediator) : ControllerBase
 {
     [HttpGet("availability")]
@@ -25,6 +27,7 @@ public sealed class TablesController(IMediator mediator) : ControllerBase
         return Ok(dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType<TableDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -35,6 +38,7 @@ public sealed class TablesController(IMediator mediator) : ControllerBase
         return CreatedAtAction(null, new { id = dto.Id }, dto);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     [ProducesResponseType<TableDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

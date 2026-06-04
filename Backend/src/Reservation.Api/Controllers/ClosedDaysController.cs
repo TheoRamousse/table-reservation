@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.ClosedDays.Commands;
@@ -9,6 +10,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/closed-days")]
+[Authorize]
 public sealed class ClosedDaysController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
@@ -19,6 +21,7 @@ public sealed class ClosedDaysController(IMediator mediator) : ControllerBase
         return Ok(new { closedDays = dtos });
     }
 
+    [Authorize(Roles = "Manager,Admin")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult> Declare([FromBody] DeclareClosedDayRequest request, CancellationToken ct)

@@ -68,6 +68,12 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
             to   = e.To.ToString()
         }),
 
+        InvalidBookingStateException e => (409, "INVALID_BOOKING_STATE", new
+        {
+            current   = e.Current.ToString(),
+            operation = e.Operation
+        }),
+
         // ── 422 ──────────────────────────────────────────────────────────────
         TimeOutsideServiceException e => (422, "TIME_OUTSIDE_SERVICE", new
         {

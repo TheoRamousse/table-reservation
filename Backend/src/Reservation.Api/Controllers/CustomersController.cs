@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.Bookings.Queries;
@@ -10,9 +11,11 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/customers")]
+[Authorize]
 public sealed class CustomersController(IMediator mediator) : ControllerBase
 {
     // POST /api/customers
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpPost]
     [ProducesResponseType<CustomerDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -25,6 +28,7 @@ public sealed class CustomersController(IMediator mediator) : ControllerBase
     }
 
     // GET /api/customers/{id}
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpGet("{id:guid}")]
     [ProducesResponseType<CustomerDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,6 +39,7 @@ public sealed class CustomersController(IMediator mediator) : ControllerBase
     }
 
     // GET /api/customers?phone=...&email=...  →  { "customers": [ ... ] }
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> Search(
@@ -55,6 +60,7 @@ public sealed class CustomersController(IMediator mediator) : ControllerBase
     }
 
     // PATCH /api/customers/{id}/blacklist
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpPatch("{id:guid}/blacklist")]
     [ProducesResponseType<CustomerDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

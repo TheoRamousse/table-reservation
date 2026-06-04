@@ -34,6 +34,7 @@ public sealed class CreateBookingCommandHandler(
     ICustomerRepository customerRepo,
     ITableRepository tableRepo,
     IDiningServiceRepository serviceRepo,
+    IClosedDayRepository closedDayRepo,
     IClock clock) : IRequestHandler<CreateBookingCommand, BookingDto>
 {
     public async Task<BookingDto> Handle(CreateBookingCommand cmd, CancellationToken ct)
@@ -55,11 +56,14 @@ public sealed class CreateBookingCommandHandler(
             ? await bookingRepo.GetActiveTableBookingsAsync(table.Id, cmd.BookingDate, ct)
             : null;
 
+        var closedDay = await closedDayRepo.GetByDateAsync(cmd.BookingDate, ct);
+
         var booking = Domain.Entities.Booking.Create(
             customer, table, service,
             cmd.BookingDate, cmd.ArrivalTime, cmd.GuestsCount,
             cmd.Source, cmd.SpecialRequests, clock,
-            existingCovers, tableBookings);
+            existingCovers, tableBookings,
+            isClosedDay: closedDay is not null);
 
         await bookingRepo.AddAsync(booking, ct);
         await bookingRepo.SaveChangesAsync(ct);

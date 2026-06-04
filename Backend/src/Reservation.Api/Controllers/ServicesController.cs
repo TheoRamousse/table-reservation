@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.DTOs;
@@ -9,6 +10,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/services")]
+[Authorize]
 public sealed class ServicesController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
@@ -19,6 +21,7 @@ public sealed class ServicesController(IMediator mediator) : ControllerBase
         return Ok(new { services = dtos });
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType<DiningServiceDto>(StatusCodes.Status201Created)]
     public async Task<ActionResult<DiningServiceDto>> Create([FromBody] CreateDiningServiceRequest request, CancellationToken ct)

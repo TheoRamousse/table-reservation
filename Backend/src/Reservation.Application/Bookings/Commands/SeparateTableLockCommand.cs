@@ -18,7 +18,7 @@ public sealed class SeparateTableLockCommandHandler(
             ?? throw new EntityNotFoundException("Booking", cmd.BookingId);
 
         if (booking.Status is not BookingStatus.Pending and not BookingStatus.Confirmed)
-            throw new InvalidStatusTransitionException(booking.Status, BookingStatus.Cancelled);
+            throw new InvalidBookingStateException(booking.Status, "SeparateTableLock");
 
         var tableLock = await tableLockRepo.GetByBookingIdAsync(cmd.BookingId, ct)
             ?? throw new EntityNotFoundException("TableLock", cmd.BookingId);

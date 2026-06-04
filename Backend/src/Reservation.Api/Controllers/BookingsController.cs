@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Api.Requests;
 using Reservation.Application.Bookings.Commands;
@@ -9,6 +10,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/bookings")]
+[Authorize]
 public sealed class BookingsController(IMediator mediator) : ControllerBase
 {
     // POST /api/bookings
@@ -49,6 +51,7 @@ public sealed class BookingsController(IMediator mediator) : ControllerBase
     }
 
     // PATCH /api/bookings/{id}/status
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpPatch("{id:guid}/status")]
     [ProducesResponseType<BookingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -88,6 +91,7 @@ public sealed class BookingsController(IMediator mediator) : ControllerBase
     }
 
     // DELETE /api/bookings/{id}/table-lock
+    [Authorize(Roles = "Staff,Manager,Admin")]
     [HttpDelete("{id:guid}/table-lock")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

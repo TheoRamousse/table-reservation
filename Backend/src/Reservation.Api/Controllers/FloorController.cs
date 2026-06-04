@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.Application.DTOs;
 using Reservation.Application.Floor.Queries;
@@ -7,6 +8,7 @@ namespace Reservation.Api.Controllers;
 
 [ApiController]
 [Route("api/floor")]
+[Authorize(Roles = "Staff,Manager,Admin")]
 public sealed class FloorController(IMediator mediator) : ControllerBase
 {
     [HttpGet("snapshot")]

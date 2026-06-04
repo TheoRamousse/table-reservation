@@ -24,7 +24,30 @@
       </span>
     }
 
-    <button mat-icon-button class="ml-auto" (click)="logout()" aria-label="Déconnexion" title="Déconnexion">
+    <!-- Badge état de connexion SignalR (AC 3.3.1) -->
+    <span
+      data-connection-state
+      class="flex items-center gap-1.5 text-xs ml-auto mr-2"
+      [matTooltip]="connectionTooltip()"
+      aria-label="État de la connexion temps réel"
+    >
+      @switch (connectionState()) {
+        @case ('connected') {
+          <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <span class="text-green-700 hidden sm:inline">Temps réel</span>
+        }
+        @case ('connecting') {
+          <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+          <span class="text-yellow-700 hidden sm:inline">Connexion…</span>
+        }
+        @default {
+          <span class="inline-block w-2 h-2 rounded-full bg-gray-400"></span>
+          <span class="text-gray-500 hidden sm:inline">Hors ligne</span>
+        }
+      }
+    </span>
+
+    <button mat-icon-button (click)="logout()" aria-label="Déconnexion" title="Déconnexion">
       <mat-icon>logout</mat-icon>
     </button>
   </header>

@@ -78,14 +78,14 @@ status: final
 | .NET / C# | 10.0 / 14 | Runtime + langage |
 | ASP.NET Core | 10.0 | API REST + SignalR |
 | Entity Framework Core | 10.0 | ORM |
-| PostgreSQL (Npgsql) | 9.x | Driver EF Core |
+| SQLite (Microsoft.Data.Sqlite) | latest | Driver EF Core |
 | MediatR | latest | Médiateur CQRS (Commands / Queries) |
 | FluentValidation | latest | Validation des DTOs |
 | Serilog | latest | Logging structuré JSON |
 | Mapster | latest | Mapping Domain ↔ DTO |
 | Microsoft.AspNetCore.SignalR | intégré | Temps réel |
 | xUnit + FluentAssertions | latest | Tests unitaires |
-| TestContainers | latest | PostgreSQL éphémère pour tests d'intégration |
+| Microsoft.EntityFrameworkCore.Sqlite | latest | SQLite in-memory pour tests d'intégration |
 | Stryker.NET | latest | Mutation testing |
 
 ### Frontend — Angular 20
@@ -103,13 +103,15 @@ status: final
 | date-fns | latest | Manipulation de dates |
 | Angular CDK | 20.x | Drag & drop, overlay |
 
-### Base de données — PostgreSQL 16
+### Base de données — SQLite
 
-- Clés primaires UUID v7 (ordonnées dans le temps)
-- Colonnes `created_at` / `updated_at` sur toutes les tables
+- Clés primaires en `TEXT` (GUID générés par EF Core, format standard UUID)
+- Colonnes `created_at` / `updated_at` sur toutes les tables (type `TEXT`, format ISO 8601)
 - Soft delete via `deleted_at` nullable (pas de DELETE physique sur les réservations)
-- Enums stockés en `VARCHAR` (lisibilité des données brutes)
+- Enums stockés en `TEXT` (lisibilité des données brutes)
 - Nommage `snake_case` en base, `PascalCase` en C# via convention globale dans le DbContext
+- `PRAGMA foreign_keys = ON` activé au démarrage du DbContext
+- Tests d'intégration : `Data Source=:memory:` (SQLite in-memory, sans fichier)
 
 ---
 
@@ -142,7 +144,7 @@ status: final
 └────────────────────────┬────────────────────────────────┘
                          │ EF Core 10
 ┌────────────────────────▼────────────────────────────────┐
-│                  PostgreSQL 16                           │
+│                  SQLite                                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -813,7 +815,7 @@ Affichage mis à jour automatiquement (< 2s P95)  // via Computed signals
 
 | Risque | Mitigation |
 |--------|------------|
-| Concurrence sur la création de réservation | Transaction + `SELECT FOR UPDATE` + index couvrant |
+| Concurrence sur la création de réservation | Transaction SQLite (isolation sérialisée par défaut) + index couvrant |
 | Scalabilité de SignalR | Groups par (date, serviceId) pour limiter le broadcast |
 | Dérive des notifications asynchrones | Retry policy + dead letter queue (à configurer en Infrastructure) |
 | Test de la logique de blacklist automatique | `IClock` mockable + tests unitaires Domain dédiés |
@@ -829,16 +831,12 @@ Affichage mis à jour automatiquement (< 2s P95)  // via Computed signals
 .NET 10 SDK
 Node.js 22 LTS
 Angular CLI 20 (npm install -g @angular/cli)
-Docker Desktop (PostgreSQL via Docker Compose)
 ```
 
 ### Lancer l'environnement de développement
 
 ```bash
-# 1. Base de données
-docker compose up -d postgres
-
-# 2. Migrations EF Core
+# 1. Migrations EF Core
 cd src/Reservation.Api
 dotnet ef database update
 
@@ -855,7 +853,7 @@ ng serve
 ```json
 {
   "ConnectionStrings": {
-    "Default": "Host=localhost;Database=reservation;Username=postgres;Password=postgres"
+    "Default": "Data Source=reservation.db"
   },
   "Cors": {
     "AllowedOrigins": ["http://localhost:4200"]

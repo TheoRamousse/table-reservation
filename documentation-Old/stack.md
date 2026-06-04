@@ -14,7 +14,7 @@
 └────────────────────────┬────────────────────────────────┘
                          │ EF Core 10
 ┌────────────────────────▼────────────────────────────────┐
-│                  PostgreSQL 16                           │
+│                  SQLite                                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -30,7 +30,7 @@
 | ASP.NET Core       | 10.0     | API REST + SignalR                            |
 | C#                 | 14       | Langage principal                             |
 | Entity Framework Core | 10.0 | ORM                                           |
-| PostgreSQL (Npgsql)| 9.x      | Driver EF Core pour Postgres                  |
+| SQLite (Microsoft.Data.Sqlite) | latest | Driver EF Core pour SQLite             |
 
 ### Architecture du projet
 
@@ -57,7 +57,7 @@ La couche Domain n'a **aucune dépendance** externe (pas d'EF, pas d'ASP.NET).
 | xUnit 2.x                 | Framework de tests                              |
 | FluentAssertions          | Assertions expressives dans les tests           |
 | Stryker.NET               | Mutation testing                                |
-| TestContainers            | PostgreSQL éphémère pour les tests d'intégration|
+| Microsoft.EntityFrameworkCore.Sqlite | SQLite in-memory pour les tests d'intégration |
 | FluentValidation          | Validation des DTOs en entrée d'API             |
 | MediatR                   | Médiateur CQRS (Commands / Queries)             |
 | Serilog                   | Logging structuré (JSON)                        |
@@ -218,7 +218,7 @@ signalRService.on('TableStatusChanged', (event) => {
 
 ---
 
-## Base de données — PostgreSQL 16
+## Base de données — SQLite
 
 ### Principales tables
 
@@ -233,8 +233,8 @@ closed_days     -- Jours de fermeture
 
 ### Conventions
 
-- Clés primaires en `UUID` (v7, ordonnées dans le temps).
-- Colonnes `created_at` et `updated_at` sur toutes les tables (type `timestamptz`).
+- Clés primaires en `TEXT` (GUID générés par EF Core côté application, format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).
+- Colonnes `created_at` et `updated_at` sur toutes les tables (type `TEXT`, format ISO 8601).
 - Soft delete via colonne `deleted_at` nullable (pas de `DELETE` physique sur les réservations).
 - Index sur `(booking_date, service_id, status)` pour les requêtes de disponibilité.
 
@@ -248,15 +248,11 @@ closed_days     -- Jours de fermeture
 .NET 10 SDK
 Node.js 22 LTS
 Angular CLI 20   (npm install -g @angular/cli)
-Docker Desktop   (pour PostgreSQL via Docker Compose)
 ```
 
 ### Lancer le projet
 
 ```bash
-# Base de données
-docker compose up -d postgres
-
 # Backend
 cd src/Reservation.Api
 dotnet run
@@ -271,7 +267,7 @@ ng serve
 ```json
 {
   "ConnectionStrings": {
-    "Default": "Host=localhost;Database=reservation;Username=postgres;Password=postgres"
+    "Default": "Data Source=reservation.db"
   },
   "Cors": {
     "AllowedOrigins": ["http://localhost:4200"]

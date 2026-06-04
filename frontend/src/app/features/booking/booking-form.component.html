@@ -211,6 +211,41 @@
               <p class="text-sm text-gray-400 italic flex-1">Aucune table sélectionnée</p>
             }
           </div>
+
+          <!-- Section fusion de tables (uniquement si table combinable) -->
+          @if (showFusionSection()) {
+            <div class="border border-dashed border-blue-200 bg-blue-50 rounded-lg p-3 space-y-2">
+              <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1">
+                <mat-icon class="!text-base">merge</mat-icon>
+                Fusionner avec une autre table (optionnel)
+              </p>
+
+              @if (combinableTablesForSelect().length > 0) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full bg-white">
+                  <mat-label>Table secondaire</mat-label>
+                  <mat-select [value]="secondaryTableId()"
+                              (valueChange)="onSecondaryTableChange($event)">
+                    <mat-option [value]="null">— Aucune —</mat-option>
+                    @for (table of combinableTablesForSelect(); track table.id) {
+                      <mat-option [value]="table.id">
+                        T{{ table.number }} — {{ table.zone }} ({{ table.capacity }} pers.)
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                @if (combinedCapacity()) {
+                  <p class="text-sm text-blue-800 font-medium">
+                    Capacité totale :
+                    {{ selectedTable()!.capacity }} + {{ selectedSecondaryTable()!.capacity }}
+                    = {{ combinedCapacity() }} personnes
+                  </p>
+                }
+              } @else {
+                <p class="text-xs text-blue-600 italic">Aucune autre table combinable disponible sur ce créneau.</p>
+              }
+            </div>
+          }
         </fieldset>
 
         <!-- Section DEMANDES SPÉCIALES -->

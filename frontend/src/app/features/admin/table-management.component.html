@@ -1,0 +1,99 @@
+<div class="min-h-screen bg-gray-50">
+
+  <!-- En-tête -->
+  <header class="bg-white border-b px-6 py-4 sticky top-0 z-10 shadow-sm">
+    <div class="flex items-center justify-between max-w-5xl mx-auto">
+      <h1 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+        <mat-icon class="text-gray-500">table_restaurant</mat-icon>
+        Gestion des tables
+      </h1>
+      <button mat-flat-button color="primary" (click)="onAdd()">
+        <mat-icon>add</mat-icon>
+        Ajouter une table
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    @if (isLoading()) {
+      <div class="flex justify-center py-16">
+        <mat-spinner diameter="40" />
+      </div>
+    } @else {
+      <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <table mat-table [dataSource]="sortedTables()" class="w-full">
+
+          <!-- Numéro -->
+          <ng-container matColumnDef="number">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">N°</th>
+            <td mat-cell *matCellDef="let table" class="font-mono font-medium">T{{ table.number }}</td>
+          </ng-container>
+
+          <!-- Zone -->
+          <ng-container matColumnDef="zone">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">Zone</th>
+            <td mat-cell *matCellDef="let table" class="text-gray-700">{{ table.zone }}</td>
+          </ng-container>
+
+          <!-- Capacité -->
+          <ng-container matColumnDef="capacity">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">Capacité</th>
+            <td mat-cell *matCellDef="let table" class="text-gray-700">{{ capacityRange(table) }} pers.</td>
+          </ng-container>
+
+          <!-- Combinable -->
+          <ng-container matColumnDef="isCombinable">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">Combinable</th>
+            <td mat-cell *matCellDef="let table">
+              @if (table.isCombinable) {
+                <mat-icon class="text-green-500" matTooltip="Combinable">check_circle</mat-icon>
+              } @else {
+                <mat-icon class="text-gray-300" matTooltip="Non combinable">cancel</mat-icon>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Actif -->
+          <ng-container matColumnDef="isActive">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">Actif</th>
+            <td mat-cell *matCellDef="let table">
+              <mat-slide-toggle
+                [checked]="table.isActive"
+                (change)="onToggleActive(table)"
+                [attr.aria-label]="'Activer/désactiver table ' + table.number"
+              />
+            </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="!font-semibold text-gray-700">Actions</th>
+            <td mat-cell *matCellDef="let table">
+              <button mat-icon-button (click)="onEdit(table)"
+                      [matTooltip]="'Modifier table ' + table.number"
+                      aria-label="Modifier">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns" class="bg-gray-50"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              class="hover:bg-gray-50 transition-colors"
+              [class.opacity-50]="!row.isActive">
+          </tr>
+
+        </table>
+
+        @if (sortedTables().length === 0) {
+          <div class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+            <mat-icon class="!text-5xl !text-gray-300">table_restaurant</mat-icon>
+            <p class="text-sm">Aucune table configurée.</p>
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+</div>
